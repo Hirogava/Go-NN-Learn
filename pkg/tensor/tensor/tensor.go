@@ -1,36 +1,25 @@
 package tensor
 
-import "fmt"
+// Vector представляет одномерный тензор (вектор).
+// Это просто слайс float64 для работы с одномерными данными.
+type Vector []float64
 
+// Matrix представляет двумерный тензор (матрицу).
+// Data хранится в row-major порядке: элементы одной строки идут последовательно.
+// Индексация: Data[row*Cols + col]
+type Matrix struct {
+	Data []float64
+	Rows int
+	Cols int
+}
+
+// Tensor представляет N-мерный тензор.
+// Data - плоский массив данных.
+// Shape - размерность по каждой оси.
+// Strides - количество элементов для перехода к следующему элементу по оси.
+// Strides позволяют эффективно работать с транспонированием и подтензорами без копирования.
 type Tensor struct {
-	Data  []float64
-	Shape []int
-}
-
-func New(data []float64, shape []int) *Tensor {
-	return &Tensor{
-		Data:  data,
-		Shape: shape,
-	}
-}
-
-func (t *Tensor) String() string {
-	return fmt.Sprintf("Tensor(shape=%v)", t.Shape)
-}
-
-func (t *Tensor) ZeroGrad() *Tensor {
-	gradData := make([]float64, len(t.Data))
-	return &Tensor{
-		Data:  gradData,
-		Shape: t.Shape,
-	}
-}
-
-func (t *Tensor) Clone() *Tensor {
-	data := make([]float64, len(t.Data))
-	copy(data, t.Data)
-	return &Tensor{
-		Data:  data,
-		Shape: append([]int{}, t.Shape...),
-	}
+	Data    []float64
+	Shape   []int
+	Strides []int
 }
