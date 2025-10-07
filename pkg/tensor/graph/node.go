@@ -19,14 +19,13 @@ type Node struct {
 type BackwardFunc func(grad *tensor.Tensor)
 
 type Operation interface {
-	Forward(inputs ...*Node) *Node
 	Backward(grad *tensor.Tensor)
 }
 
 func NewNode(value *tensor.Tensor, parents []*Node, op Operation) *Node {
 	return &Node{
 		Value:     value,
-		Grad:      value.ZeroGrad(),
+		Grad:      tensor.Zeros(value.Shape...),
 		Parents:   parents,
 		Operation: op,
 	}
@@ -37,5 +36,5 @@ func (n *Node) IsLeaf() bool {
 }
 
 func (n *Node) ZeroGrad() {
-	n.Grad = n.Value.ZeroGrad()
+	n.Grad = tensor.Zeros(n.Value.Shape...) // Ватафак чел ты чо курил
 }

@@ -15,14 +15,15 @@ func NewEngine() *Engine {
 	}
 }
 
-//	Обратное распространение по всему графу
+// Backward выполняет обратное распространение по всему графу
 func (e *Engine) Backward(finalNode *graph.Node) {
-	// TODO: Инициализировать градиент конечного узла единицей
+	// Инициализировать градиент конечного узла единицами той же формы
+	finalNode.Grad = tensor.Ones(finalNode.Value.Shape...)
 
-	// TODO: Выполнить топологическую сортировку узлов
-	sortedNodes := e.topologicalSort()
+	// Выполнить топологическую сортировку узлов
+	sortedNodes := e.topologicalSort(finalNode)
 
-	// TODO: Выполнить обратное распространение в обратном порядке
+	// Выполнить обратное распространение в обратном порядке
 	for i := len(sortedNodes) - 1; i >= 0; i-- {
 		node := sortedNodes[i]
 		if node.Operation != nil {
@@ -31,26 +32,41 @@ func (e *Engine) Backward(finalNode *graph.Node) {
 	}
 }
 
-// Топологическая сортировка узлов
-func (e *Engine) topologicalSort() []*graph.Node {
-	// TODO: Реализовать топологическую сортировку
-	return e.Nodes // временная заглушка
+// Топологическая сортировка узлов от finalNode
+func (e *Engine) topologicalSort(root *graph.Node) []*graph.Node {
+	visited := make(map[*graph.Node]bool)
+	stack := make([]*graph.Node, 0)
+
+	var dfs func(*graph.Node)
+	dfs = func(node *graph.Node) {
+		if visited[node] {
+			return
+		}
+		visited[node] = true
+
+		// Сначала посещаем всех родителей
+		for _, parent := range node.Parents {
+			dfs(parent)
+		}
+
+		// Затем добавляем текущий узел в стек
+		stack = append(stack, node)
+	}
+
+	dfs(root)
+	return stack
 }
 
-//	Обнуление градиентов всех узлов
+// RequireGrad оборачивает тензор в узел, включаемый в граф
+func (e *Engine) RequireGrad(t *tensor.Tensor) *graph.Node {
+	node := graph.NewNode(t, nil, nil) // листовой узел без родителей и операций
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+// Обнуление градиентов всех узлов
 func (e *Engine) ZeroGrad() {
 	for _, node := range e.Nodes {
 		node.ZeroGrad()
 	}
-}
-
-//	Сложение двух узлов
-func (e *Engine) Add(a, b *graph.Node) *graph.Node {
-	// TODO: Реализовать операцию сложения
-	result := &graph.Node{
-		Value:   &tensor.Tensor{}, // TODO: вычислить реальное значение
-		Parents: []*graph.Node{a, b},
-	}
-	e.Nodes = append(e.Nodes, result)
-	return result
 }
