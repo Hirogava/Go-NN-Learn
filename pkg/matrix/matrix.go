@@ -1,8 +1,7 @@
-package main
+package matrix
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
@@ -10,7 +9,7 @@ import (
 
 func NewMatrix(data [][]float64) (*tensor.Matrix, error) {
 	if len(data) == 0 {
-		return nil, errors.New("Матрица пустая")
+		return nil, errors.New("матрица пустая")
 	}
 
 	rows := len(data)
@@ -18,7 +17,7 @@ func NewMatrix(data [][]float64) (*tensor.Matrix, error) {
 
 	for i := 1; i < rows; i++ {
 		if len(data[i]) != cols {
-			return nil, errors.New("Матрица имеет столбцы разной длины")
+			return nil, errors.New("матрица имеет столбцы разной длины")
 		}
 	}
 
@@ -44,11 +43,11 @@ func Set(m *tensor.Matrix, i, j int, value float64) {
 
 func MatMul(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
 	if x1 == nil || x2 == nil {
-		return nil, errors.New("Матрицы пустые")
+		return nil, errors.New("матрицы пустые")
 	}
 	rows, colsx2, colsx1 := x1.Rows, x2.Cols, x1.Cols
 	if x1.Cols != x2.Rows {
-		return nil, errors.New("Матрицы несовместные")
+		return nil, errors.New("матрицы несовместные")
 	}
 	res := &tensor.Matrix{
 		Data: make([]float64, rows*colsx2),
@@ -69,11 +68,11 @@ func MatMul(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
 
 func MatMulParallel(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
 	if x1 == nil || x2 == nil {
-		return nil, errors.New("Матрицы пустые")
+		return nil, errors.New("матрицы пустые")
 	}
 	rows, colsx2, colsx1 := x1.Rows, x2.Cols, x1.Cols
 	if x1.Cols != x2.Rows {
-		return nil, errors.New("Матрицы несовместные")
+		return nil, errors.New("матрицы несовместные")
 	}
 	res := &tensor.Matrix{
 		Data: make([]float64, rows*colsx2),
@@ -100,7 +99,7 @@ func MatMulParallel(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
 
 func Transposition(x *tensor.Matrix) (*tensor.Matrix, error) {
 	if x == nil {
-		return nil, errors.New("Матрица пустая")
+		return nil, errors.New("матрица пустая")
 	}
 	rows, cols := x.Cols, x.Rows
 	res := &tensor.Matrix{
@@ -114,33 +113,4 @@ func Transposition(x *tensor.Matrix) (*tensor.Matrix, error) {
 		}
 	}
 	return res, nil
-}
-
-func main() {
-	X1, err := NewMatrix([][]float64{{9, 8, 6}, {7, 5, 2}, {2, 3, 3}})
-	if err != nil {
-		fmt.Println("Ошибка создания первой матрицы")
-	}
-	X2, err := NewMatrix([][]float64{{4, 1, 8}, {10, 2, 7}, {5, 10, 7}})
-	if err != nil {
-		fmt.Println("Ошибка создания второй матрицы")
-	}
-	res1, err := MatMul(X1, X2)
-	if err != nil {
-		fmt.Println("Ошибка:", err)
-	} else {
-		fmt.Println(res1.Data)
-	}
-	res2, err := MatMulParallel(X1, X2)
-	if err != nil {
-		fmt.Println("Ошибка:", err)
-	} else {
-		fmt.Println(res2.Data)
-	}
-	res3, err3 := Transposition(X1)
-	if err3 != nil {
-		fmt.Println("Ошибка:", err3)
-	} else {
-		fmt.Println(res3.Data)
-	}
 }
