@@ -114,3 +114,20 @@ func Transposition(x *tensor.Matrix) (*tensor.Matrix, error) {
 	}
 	return res, nil
 }
+
+// Конверторы между Matrix и Tensor
+func MatrixToTensor(m *tensor.Matrix) *tensor.Tensor {
+	return &tensor.Tensor{
+		Data:    m.Data,
+		Shape:   []int{m.Rows, m.Cols},
+		Strides: []int{m.Cols, 1},
+	}
+}
+
+func TensorToMatrix(t *tensor.Tensor) *tensor.Matrix {
+	return &tensor.Matrix{
+		Data: t.Data,
+		Rows: t.Shape[0],
+		Cols: t.Shape[1],
+	}
+}
