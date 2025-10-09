@@ -142,3 +142,134 @@ func (e *Engine) Transpose(a *graph.Node) *graph.Node {
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
+
+type Sum struct {
+	Parents    []*graph.Node
+	InputShape []int
+}
+
+func (op *Sum) Backward(grad *tensor.Tensor) {
+	p := op.Parents[0]
+	if p.Grad == nil {
+		p.Grad = tensor.Zeros(op.InputShape...)
+	}
+
+	size := 1
+	for _, d := range op.InputShape {
+		size *= d
+	}
+	data := make([]float64, size)
+	for i := range data {
+		data[i] = grad.Data[0]
+	}
+	strides := make([]int, len(op.InputShape))
+	stride := 1
+	for i := len(op.InputShape) - 1; i >= 0; i-- {
+		strides[i] = stride
+		stride *= op.InputShape[i]
+	}
+	scaled := &tensor.Tensor{Data: data, Shape: append([]int{}, op.InputShape...), Strides: strides}
+
+	g, _ := tensor.Add(p.Grad, scaled)
+	p.Grad = g
+}
+
+func (e *Engine) Sum(a *graph.Node) *graph.Node {
+	val := tensor.Sum(a.Value) // скаляр [1]
+	inShape := append([]int{}, a.Value.Shape...)
+	op := &Sum{Parents: []*graph.Node{a}, InputShape: inShape}
+	n := graph.NewNode(val, []*graph.Node{a}, op)
+	e.Nodes = append(e.Nodes, n)
+	return n
+}
+
+// EXP
+type Exp struct {
+	Parents []*graph.Node
+	Out     *tensor.Tensor
+}
+
+func (op *Exp) Backward(grad *tensor.Tensor) {
+	p := op.Parents[0]
+	if p.Grad == nil {
+		p.Grad = tensor.Zeros(p.Value.Shape...)
+	}
+	gLocal, _ := tensor.Mul(op.Out, grad)
+	g, _ := tensor.Add(p.Grad, gLocal)
+	p.Grad = g
+}
+
+func (e *Engine) Exp(a *graph.Node) *graph.Node {
+	val := tensor.Exp(a.Value)
+	op := &Exp{Parents: []*graph.Node{a}, Out: val}
+	n := graph.NewNode(val, []*graph.Node{a}, op)
+	e.Nodes = append(e.Nodes, n)
+	return n
+}
+
+// LOG
+type Log struct {
+	Parents []*graph.Node
+	In      *tensor.Tensor
+	Eps     float64
+}
+
+func (op *Log) Backward(grad *tensor.Tensor) {
+	p := op.Parents[0]
+	if p.Grad == nil {
+		p.Grad = tensor.Zeros(p.Value.Shape...)
+	}
+	eps := op.Eps
+	inv := tensor.Apply(op.In, func(x float64) float64 {
+		if eps > 0 && x < eps {
+			x = eps
+		}
+		return 1.0 / x
+	})
+	gLocal, _ := tensor.Mul(inv, grad)
+	g, _ := tensor.Add(p.Grad, gLocal)
+	p.Grad = g
+}
+
+func (e *Engine) Log(a *graph.Node) *graph.Node {
+	val := tensor.Log(a.Value)
+	op := &Log{Parents: []*graph.Node{a}, In: a.Value, Eps: 1e-12}
+	n := graph.NewNode(val, []*graph.Node{a}, op)
+	e.Nodes = append(e.Nodes, n)
+	return n
+}
+
+// Reshape
+type ReshapeOp struct {
+	Parents  []*graph.Node
+	InShape  []int
+	OutShape []int
+}
+
+func (op *ReshapeOp) Backward(grad *tensor.Tensor) {
+	p := op.Parents[0]
+	if p.Grad == nil {
+		p.Grad = tensor.Zeros(op.InShape...)
+	}
+	gradIn, err := tensor.Reshape(grad, op.InShape)
+	if err != nil {
+		return
+	}
+	g, _ := tensor.Add(p.Grad, gradIn)
+	p.Grad = g
+}
+
+func (e *Engine) Reshape(a *graph.Node, newShape []int) *graph.Node {
+	val, err := tensor.Reshape(a.Value, newShape)
+	if err != nil {
+		return nil
+	}
+	op := &ReshapeOp{
+		Parents:  []*graph.Node{a},
+		InShape:  append([]int{}, a.Value.Shape...),
+		OutShape: append([]int{}, newShape...),
+	}
+	n := graph.NewNode(val, []*graph.Node{a}, op)
+	e.Nodes = append(e.Nodes, n)
+	return n
+}
