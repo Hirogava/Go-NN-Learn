@@ -168,3 +168,41 @@ func Exp(a *Tensor) *Tensor {
 func Log(a *Tensor) *Tensor {
 	return Apply(a, math.Log)
 }
+
+func Max(a *Tensor) *Tensor {
+	if len(a.Data) == 0 {
+		panic("Cannot compute max of empty tensor")
+	}
+	maxVal := a.Data[0]
+	for _, val := range a.Data {
+		if val > maxVal {
+			maxVal = val
+		}
+	}
+	return &Tensor{Data: []float64{maxVal}, Shape: []int{1}}
+}
+
+func Sub(a *Tensor, scalar *Tensor) *Tensor {
+	if len(scalar.Data) != 1 {
+		panic("Sub expects a scalar tensor as the second argument")
+	}
+	result := Zeros(a.Shape...)
+	for i := range a.Data {
+		result.Data[i] = a.Data[i] - scalar.Data[0]
+	}
+	return result
+}
+
+func Div(a *Tensor, other *Tensor) *Tensor {
+	if len(a.Shape) != 2 || len(other.Shape) != 1 || a.Shape[0] != other.Shape[0] {
+		panic("Invalid shapes for division")
+	}
+	rows, cols := a.Shape[0], a.Shape[1]
+	result := Zeros(a.Shape...)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			result.Data[i*cols+j] = a.Data[i*cols+j] / other.Data[i]
+		}
+	}
+	return result
+}
