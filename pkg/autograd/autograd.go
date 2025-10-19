@@ -81,14 +81,19 @@ func NewReLUOp(input *graph.Node) *ReLUOp {
 	return &ReLUOp{input: input}
 }
 
-func (e *Engine) ReLU(input *graph.Node) *graph.Node {
-	op := NewReLUOp(input)
+func (op *ReLUOp) Forward() *tensor.Tensor {
 	result := tensor.Zeros(op.input.Value.Shape...)
 	for i := range op.input.Value.Data {
 		if op.input.Value.Data[i] > 0 {
 			result.Data[i] = op.input.Value.Data[i]
 		}
 	}
+	return result
+}
+
+func (e *Engine) ReLU(input *graph.Node) *graph.Node {
+	op := NewReLUOp(input)
+	result := op.Forward()
 	node := graph.NewNode(result, []*graph.Node{input}, op)
 	e.Nodes = append(e.Nodes, node)
 	return node
@@ -116,12 +121,18 @@ func NewSigmoidOp(input *graph.Node) *SigmoidOp {
 	return &SigmoidOp{input: input}
 }
 
-func (e *Engine) Sigmoid(input *graph.Node) *graph.Node {
-	op := NewSigmoidOp(input)
+func (op *SigmoidOp) Forward() *tensor.Tensor {
 	result := tensor.Zeros(op.input.Value.Shape...)
 	for i := range op.input.Value.Data {
 		result.Data[i] = 1.0 / (1.0 + math.Exp(-op.input.Value.Data[i]))
 	}
+	op.output = result
+	return result
+}
+
+func (e *Engine) Sigmoid(input *graph.Node) *graph.Node {
+	op := NewSigmoidOp(input)
+	result := op.Forward()
 	node := graph.NewNode(result, []*graph.Node{input}, op)
 	e.Nodes = append(e.Nodes, node)
 	return node
@@ -148,12 +159,18 @@ func NewTanhOp(input *graph.Node) *TanhOp {
 	return &TanhOp{input: input}
 }
 
-func (e *Engine) Tahn(input *graph.Node) *graph.Node {
-	op := NewTanhOp(input)
+func (op *TanhOp) Forward() *tensor.Tensor {
 	result := tensor.Zeros(op.input.Value.Shape...)
 	for i := range op.input.Value.Data {
 		result.Data[i] = math.Tanh(op.input.Value.Data[i])
 	}
+	op.output = result
+	return result
+}
+
+func (e *Engine) Tanh(input *graph.Node) *graph.Node {
+	op := NewTanhOp(input)
+	result := op.Forward()
 	node := graph.NewNode(result, []*graph.Node{input}, op)
 	e.Nodes = append(e.Nodes, node)
 	return node
@@ -182,31 +199,60 @@ func NewSoftmaxCrossEntropyOp(input *graph.Node, target *tensor.Tensor) *Softmax
 	return &SoftmaxCrossEntropyOp{input: input, target: target}
 }
 
-func (e *Engine) SoftmaxCrossEntropy(input *graph.Node, target *tensor.Tensor) *graph.Node {
-	op := NewSoftmaxCrossEntropyOp(input, target)
+func (op *SoftmaxCrossEntropyOp) Forward() *tensor.Tensor {
+	if len(op.input.Value.Shape) != 2 || len(op.target.Shape) != 2 || op.input.Value.Shape[0] != op.target.Shape[0] {
+		panic("Input and target must be 2D tensors with matching batch sizes")
+	}
+
 	maxVal := tensor.Max(op.input.Value)
 	shifted := tensor.Sub(op.input.Value, maxVal)
-
 	exp := tensor.Exp(shifted)
-	sumExp := tensor.Sum(exp)
+
+	rows, cols := op.input.Value.Shape[0], op.input.Value.Shape[1]
+	sumExp := tensor.Zeros(rows)
+	for i := 0; i < rows; i++ {
+		sum := 0.0
+		for j := 0; j < cols; j++ {
+			idx := i*op.input.Value.Strides[0] + j*op.input.Value.Strides[1]
+			sum += exp.Data[idx]
+		}
+		sumExp.Data[i] = sum
+	}
+
 	softmax := tensor.Div(exp, sumExp)
 	op.softmax = softmax
 
-	loss := tensor.Zeros(1)
-	for i := range op.input.Value.Data {
-		if op.target.Data[i] > 0 {
-			loss.Data[i] -= math.Log(math.Max(softmax.Data[i], 1e-15)) * op.target.Data[i]
+	loss := tensor.Zeros(rows, 1)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			idx := i*op.input.Value.Strides[0] + j*op.input.Value.Strides[1]
+			targetIdx := i*op.target.Strides[0] + j*op.target.Strides[1]
+			if op.target.Data[targetIdx] > 0 {
+				loss.Data[i] -= math.Log(math.Max(softmax.Data[idx], 1e-15)) * op.target.Data[targetIdx]
+			}
 		}
 	}
-	node := graph.NewNode(loss, []*graph.Node{input}, op)
+	op.output = loss
+	return loss
+}
+
+func (e *Engine) SoftmaxCrossEntropy(input *graph.Node, target *tensor.Tensor) *graph.Node {
+	op := NewSoftmaxCrossEntropyOp(input, target)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
 
 func (op *SoftmaxCrossEntropyOp) Backward(grad *tensor.Tensor) {
+	rows, cols := op.input.Value.Shape[0], op.input.Value.Shape[1]
 	gradInput := tensor.Zeros(op.input.Value.Shape...)
-	for i := range op.input.Value.Data {
-		gradInput.Data[i] = (op.softmax.Data[i] - op.target.Data[i]) * grad.Data[0]
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			idx := i*op.input.Value.Strides[0] + j*op.input.Value.Strides[1]
+			targetIdx := i*op.target.Strides[0] + j*op.target.Strides[1]
+			gradInput.Data[idx] = (op.softmax.Data[idx] - op.target.Data[targetIdx]) * grad.Data[i]
+		}
 	}
 	if op.input.Grad == nil {
 		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
