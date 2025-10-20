@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
 
 type Engine struct {
@@ -49,7 +49,7 @@ func (e *Engine) GetForwardDuration() time.Duration {
 	return e.forwardDuration
 }
 
-//	Обратное распространение по всему графу
+// Обратное распространение по всему графу
 func (e *Engine) Backward(finalNode *graph.Node) {
 	startTime := time.Now()
 	defer func() {
@@ -93,14 +93,14 @@ func (e *Engine) topologicalSort() []*graph.Node {
 	return e.Nodes // временная заглушка
 }
 
-//	Обнуление градиентов всех узлов
+// Обнуление градиентов всех узлов
 func (e *Engine) ZeroGrad() {
 	for _, node := range e.Nodes {
 		node.ZeroGrad()
 	}
 }
 
-//	Сложение двух узлов
+// Сложение двух узлов
 func (e *Engine) Add(a, b *graph.Node) *graph.Node {
 	// TODO: Реализовать операцию сложения
 	result := &graph.Node{

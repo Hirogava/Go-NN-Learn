@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 type Node struct {
