@@ -568,7 +568,7 @@ func TestLog(t *testing.T) {
 	}
 }
 
-//Тесты SIMD оптимизаций
+// === Тесты SIMD оптимизаций ===
 
 func TestAddSIMD(t *testing.T) {
 	tests := []struct {
