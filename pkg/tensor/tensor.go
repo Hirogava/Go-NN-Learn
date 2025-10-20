@@ -23,3 +23,17 @@ type Tensor struct {
 	Shape   []int
 	Strides []int
 }
+
+// ZeroGrad создает тензор с нулевыми градиентами той же формы
+func (t *Tensor) ZeroGrad() *Tensor {
+	return &Tensor{
+		Data:    make([]float64, len(t.Data)),
+		Shape:   append([]int{}, t.Shape...),
+		Strides: append([]int{}, t.Strides...),
+	}
+}
+
+// Size возвращает общее количество элементов в тензоре
+func (t *Tensor) Size() int64 {
+	return int64(len(t.Data))
+}
