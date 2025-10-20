@@ -93,7 +93,7 @@ func WithPooledTensor(size int, fn func(*Tensor) error) error {
 func MatMulPooled(a, b *Tensor) (*Tensor, error) {
 	// Проверка размерностей
 	if len(a.Shape) != 2 || len(b.Shape) != 2 {
-		return nil, fmt.Errorf("matmul requires 2D tensors")
+		return nil, fmt.Errorf("умножение матриц требует 2D тензоры")
 	}
 
 	m := a.Shape[0]
@@ -101,7 +101,7 @@ func MatMulPooled(a, b *Tensor) (*Tensor, error) {
 	p := b.Shape[1]
 
 	if n != b.Shape[0] {
-		return nil, fmt.Errorf("incompatible shapes for matmul")
+		return nil, fmt.Errorf("несовместимые формы для умножения матриц")
 	}
 
 	// Получаем тензор из пула
@@ -115,7 +115,7 @@ func MatMulPooled(a, b *Tensor) (*Tensor, error) {
 	} else if m >= BlockSize || p >= BlockSize {
 		matmulBlocked(a.Data, b.Data, result.Data, m, n, p)
 	} else {
-		matmulNaive(a.Data, b.Data, result.Data, m, n, p)
+		matmulOptimized(a.Data, b.Data, result.Data, m, n, p)
 	}
 
 	return result, nil
@@ -124,7 +124,7 @@ func MatMulPooled(a, b *Tensor) (*Tensor, error) {
 // AddPooled - версия Add с использованием пула памяти
 func AddPooled(a, b *Tensor) (*Tensor, error) {
 	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("shapes must match: %v vs %v", a.Shape, b.Shape)
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
 	}
 
 	result := GetTensor(len(a.Data))
@@ -141,7 +141,7 @@ func AddPooled(a, b *Tensor) (*Tensor, error) {
 // MulPooled - версия Mul с использованием пула памяти
 func MulPooled(a, b *Tensor) (*Tensor, error) {
 	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("shapes must match: %v vs %v", a.Shape, b.Shape)
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
 	}
 
 	result := GetTensor(len(a.Data))

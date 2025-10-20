@@ -295,8 +295,8 @@ func BenchmarkMatMulPooled(b *testing.B) {
 	}
 }
 
-func BenchmarkMatMulNaive(b *testing.B) {
-	// 64x64 для сравнения naive алгоритма
+func BenchmarkMatMulOptimized(b *testing.B) {
+	// 64x64 для сравнения оптимизированного алгоритма
 	size := 64
 	a := make([]float64, size*size)
 	bm := make([]float64, size*size)
@@ -308,7 +308,7 @@ func BenchmarkMatMulNaive(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		matmulNaive(a, bm, c, size, size, size)
+		matmulOptimized(a, bm, c, size, size, size)
 	}
 }
 

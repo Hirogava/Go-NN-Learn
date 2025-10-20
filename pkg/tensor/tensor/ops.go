@@ -5,12 +5,17 @@ import (
 	"math"
 )
 
-// add выполняет поэлементное сложение двух тензоров.
-// возвращает новый тензор с, где с[i] = а[i] + в[i]
-// тензоры должны иметь одинаковую форму (shape).
+// Константы для оптимизации
+const (
+	UnrollFactor = 8 // Развертывание циклов для SIMD
+)
+
+// Add выполняет поэлементное сложение двух тензоров с векторизацией.
+// Возвращает новый тензор c, где c[i] = a[i] + b[i]
+// Тензоры должны иметь одинаковую форму (shape).
 func Add(a, b *Tensor) (*Tensor, error) {
 	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("shapes must match: %v vs %v", a.Shape, b.Shape)
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
 	}
 
 	result := &Tensor{
@@ -19,19 +24,16 @@ func Add(a, b *Tensor) (*Tensor, error) {
 		Strides: append([]int{}, a.Strides...),
 	}
 
-	for i := 0; i < len(a.Data); i++ {
-		result.Data[i] = a.Data[i] + b.Data[i]
-	}
-
+	addVectorized(a.Data, b.Data, result.Data)
 	return result, nil
 }
 
-// mul выполняет поэлементное умножение двух тензоров (операция Адамара).
-// возвращает новый тензор с, где с[i] = а[i] * в[i]
-// тензоры должны иметь одинаковую форму (shape).
+// Mul выполняет поэлементное умножение двух тензоров (операция Адамара) с векторизацией.
+// Возвращает новый тензор c, где c[i] = a[i] * b[i]
+// Тензоры должны иметь одинаковую форму (shape).
 func Mul(a, b *Tensor) (*Tensor, error) {
 	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("shapes must match: %v vs %v", a.Shape, b.Shape)
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
 	}
 
 	result := &Tensor{
@@ -40,16 +42,45 @@ func Mul(a, b *Tensor) (*Tensor, error) {
 		Strides: append([]int{}, a.Strides...),
 	}
 
-	for i := 0; i < len(a.Data); i++ {
-		result.Data[i] = a.Data[i] * b.Data[i]
-	}
-
+	mulVectorized(a.Data, b.Data, result.Data)
 	return result, nil
 }
 
-// apply применяет функцию f к каждому элементу тензора.
-// возвращает новый тензор с результатами применения функции.
-// используется для функций активации (reLU, sigmoid, tanh).
+// Sub выполняет поэлементное вычитание: a - b
+func Sub(a, b *Tensor) (*Tensor, error) {
+	if !shapesEqual(a.Shape, b.Shape) {
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	}
+
+	result := &Tensor{
+		Data:    make([]float64, len(a.Data)),
+		Shape:   append([]int{}, a.Shape...),
+		Strides: append([]int{}, a.Strides...),
+	}
+
+	subVectorized(a.Data, b.Data, result.Data)
+	return result, nil
+}
+
+// Div выполняет поэлементное деление: a / b
+func Div(a, b *Tensor) (*Tensor, error) {
+	if !shapesEqual(a.Shape, b.Shape) {
+		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	}
+
+	result := &Tensor{
+		Data:    make([]float64, len(a.Data)),
+		Shape:   append([]int{}, a.Shape...),
+		Strides: append([]int{}, a.Strides...),
+	}
+
+	divVectorized(a.Data, b.Data, result.Data)
+	return result, nil
+}
+
+// Apply применяет функцию f к каждому элементу тензора.
+// Возвращает новый тензор с результатами применения функции.
+// Используется для функций активации (ReLU, sigmoid, tanh).
 func Apply(a *Tensor, f func(float64) float64) *Tensor {
 	result := &Tensor{
 		Data:    make([]float64, len(a.Data)),
@@ -57,11 +88,107 @@ func Apply(a *Tensor, f func(float64) float64) *Tensor {
 		Strides: append([]int{}, a.Strides...),
 	}
 
-	for i := 0; i < len(a.Data); i++ {
+	for i := range a.Data {
 		result.Data[i] = f(a.Data[i])
 	}
 
 	return result
+}
+
+// Векторизованные внутренние функции
+
+func addVectorized(a, b, result []float64) {
+	n := len(a)
+	i := 0
+
+	// Основной цикл с развертыванием x8
+	for ; i <= n-UnrollFactor; i += UnrollFactor {
+		idx0, idx1, idx2, idx3 := i, i+1, i+2, i+3
+		idx4, idx5, idx6, idx7 := i+4, i+5, i+6, i+7
+
+		result[idx0] = a[idx0] + b[idx0]
+		result[idx1] = a[idx1] + b[idx1]
+		result[idx2] = a[idx2] + b[idx2]
+		result[idx3] = a[idx3] + b[idx3]
+		result[idx4] = a[idx4] + b[idx4]
+		result[idx5] = a[idx5] + b[idx5]
+		result[idx6] = a[idx6] + b[idx6]
+		result[idx7] = a[idx7] + b[idx7]
+	}
+
+	// Остаток
+	for ; i < n; i++ {
+		result[i] = a[i] + b[i]
+	}
+}
+
+func mulVectorized(a, b, result []float64) {
+	n := len(a)
+	i := 0
+
+	for ; i <= n-UnrollFactor; i += UnrollFactor {
+		idx0, idx1, idx2, idx3 := i, i+1, i+2, i+3
+		idx4, idx5, idx6, idx7 := i+4, i+5, i+6, i+7
+
+		result[idx0] = a[idx0] * b[idx0]
+		result[idx1] = a[idx1] * b[idx1]
+		result[idx2] = a[idx2] * b[idx2]
+		result[idx3] = a[idx3] * b[idx3]
+		result[idx4] = a[idx4] * b[idx4]
+		result[idx5] = a[idx5] * b[idx5]
+		result[idx6] = a[idx6] * b[idx6]
+		result[idx7] = a[idx7] * b[idx7]
+	}
+
+	for ; i < n; i++ {
+		result[i] = a[i] * b[i]
+	}
+}
+
+func subVectorized(a, b, result []float64) {
+	n := len(a)
+	i := 0
+
+	for ; i <= n-UnrollFactor; i += UnrollFactor {
+		idx0, idx1, idx2, idx3 := i, i+1, i+2, i+3
+		idx4, idx5, idx6, idx7 := i+4, i+5, i+6, i+7
+
+		result[idx0] = a[idx0] - b[idx0]
+		result[idx1] = a[idx1] - b[idx1]
+		result[idx2] = a[idx2] - b[idx2]
+		result[idx3] = a[idx3] - b[idx3]
+		result[idx4] = a[idx4] - b[idx4]
+		result[idx5] = a[idx5] - b[idx5]
+		result[idx6] = a[idx6] - b[idx6]
+		result[idx7] = a[idx7] - b[idx7]
+	}
+
+	for ; i < n; i++ {
+		result[i] = a[i] - b[i]
+	}
+}
+
+func divVectorized(a, b, result []float64) {
+	n := len(a)
+	i := 0
+
+	for ; i <= n-UnrollFactor; i += UnrollFactor {
+		idx0, idx1, idx2, idx3 := i, i+1, i+2, i+3
+		idx4, idx5, idx6, idx7 := i+4, i+5, i+6, i+7
+
+		result[idx0] = a[idx0] / b[idx0]
+		result[idx1] = a[idx1] / b[idx1]
+		result[idx2] = a[idx2] / b[idx2]
+		result[idx3] = a[idx3] / b[idx3]
+		result[idx4] = a[idx4] / b[idx4]
+		result[idx5] = a[idx5] / b[idx5]
+		result[idx6] = a[idx6] / b[idx6]
+		result[idx7] = a[idx7] / b[idx7]
+	}
+
+	for ; i < n; i++ {
+		result[i] = a[i] / b[i]
+	}
 }
 
 // shapesEqual проверяет равенство форм двух тензоров.
@@ -85,7 +212,7 @@ func Reshape(a *Tensor, newShape []int) (*Tensor, error) {
 	newSize := 1
 	for _, dim := range newShape {
 		if dim <= 0 {
-			return nil, fmt.Errorf("invalid dimension: %d", dim)
+			return nil, fmt.Errorf("некорректная размерность: %d", dim)
 		}
 		newSize *= dim
 	}
@@ -97,7 +224,7 @@ func Reshape(a *Tensor, newShape []int) (*Tensor, error) {
 	}
 
 	if newSize != oldSize {
-		return nil, fmt.Errorf("cannot reshape tensor of size %d into shape %v (size %d)", oldSize, newShape, newSize)
+		return nil, fmt.Errorf("невозможно изменить форму тензора размера %d на форму %v (размер %d)", oldSize, newShape, newSize)
 	}
 
 	// Вычисляем новые strides
@@ -120,7 +247,7 @@ func Reshape(a *Tensor, newShape []int) (*Tensor, error) {
 // Для матрицы [m, n] возвращает матрицу [n, m].
 func Transpose(a *Tensor) (*Tensor, error) {
 	if len(a.Shape) != 2 {
-		return nil, fmt.Errorf("transpose requires 2D tensor, got %dD", len(a.Shape))
+		return nil, fmt.Errorf("транспонирование требует 2D тензор, получен %dD", len(a.Shape))
 	}
 
 	rows := a.Shape[0]
