@@ -79,3 +79,23 @@ func TestPredictAndEval(t *testing.T) {
 		t.Fatalf("Eval expected 0 metric, got %v", avg)
 	}
 }
+
+func BenchmarkPredict(b *testing.B) {
+	mod := buildIdentityModule()
+
+	in := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0, 2.0, 3.0, 4.0},
+			Shape:   []int{1, 4},
+			Strides: nil,
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		out := api.Predict(mod, in)
+		if out == nil {
+			b.Fatalf("Predict returned nil")
+		}
+	}
+}

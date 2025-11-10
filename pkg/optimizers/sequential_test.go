@@ -69,3 +69,26 @@ func TestSequentialForwardAndParams(t *testing.T) {
 		t.Fatalf("Params content mismatch: %+v", all)
 	}
 }
+
+func BenchmarkSequentialForward(b *testing.B) {
+	l1 := &addLayer{v: 1.0}
+	l2 := &addLayer{v: 2.0}
+	l3 := &addLayer{v: 3.0}
+	seq := optimizers.NewSequential(l1, l2, l3)
+
+	in := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{10.0},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		out := seq.Forward(in)
+		if out == nil {
+			b.Fatalf("Forward returned nil")
+		}
+	}
+}

@@ -72,3 +72,37 @@ func TestSaveLoadCheckpoint_Roundtrip(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkSaveLoadCheckpoint(b *testing.B) {
+	const size = 1024
+	data1 := make([]float64, size)
+	data2 := make([]float64, size/2)
+	for i := range data1 {
+		data1[i] = float64(i) * 0.001
+	}
+	for i := range data2 {
+		data2[i] = float64(i) * 0.002
+	}
+
+	p1 := newMockParam(data1, []int{size})
+	p2 := newMockParam(data2, []int{len(data2)})
+	mod := &mockModule{params: []*graph.Node{p1, p2}}
+
+	path := filepath.Join(b.TempDir(), "bench_ckpt.bin")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := api.SaveCheckpoint(mod, path); err != nil {
+			b.Fatalf("SaveCheckpoint failed: %v", err)
+		}
+		for j := range p1.Value.Data {
+			p1.Value.Data[j] = 0
+		}
+		for j := range p2.Value.Data {
+			p2.Value.Data[j] = 0
+		}
+		if err := api.LoadCheckpoint(mod, path); err != nil {
+			b.Fatalf("LoadCheckpoint failed: %v", err)
+		}
+	}
+}

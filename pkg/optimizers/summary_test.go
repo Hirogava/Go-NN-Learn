@@ -71,3 +71,36 @@ func TestSummaryDoesNotPanicAndPrints(t *testing.T) {
 }
 
 func contains(s, sub string) bool { return bytes.Contains([]byte(s), []byte(sub)) }
+
+func BenchmarkSummary(b *testing.B) {
+	layers := []*addLayer{
+		{v: 1.0},
+		{v: 2.0},
+		{v: 3.0},
+		{v: 4.0},
+		{v: 5.0},
+	}
+	seq := optimizers.NewSequential(
+		layers[0], layers[1], layers[2], layers[3], layers[4],
+	)
+
+	sample := &tensor.Tensor{
+		Data:    []float64{0},
+		Shape:   []int{1},
+		Strides: []int{1},
+	}
+
+	old := os.Stdout
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		b.Fatalf("open devnull failed: %v", err)
+	}
+	defer devNull.Close()
+	os.Stdout = devNull
+	defer func() { os.Stdout = old }()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		optimizers.Summary(seq, sample)
+	}
+}
