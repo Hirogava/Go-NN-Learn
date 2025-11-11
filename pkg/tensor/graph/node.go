@@ -36,5 +36,5 @@ func (n *Node) IsLeaf() bool {
 }
 
 func (n *Node) ZeroGrad() {
-	n.Grad = tensor.Zeros(n.Value.Shape...) // Ватафак чел ты чо курил
+	n.Grad = tensor.Zeros(n.Value.Shape...) // Ватафак чел ты чо курил // согласен ©shz
 }
