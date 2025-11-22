@@ -7,8 +7,11 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
-// Predict — выполняет прямой проход модели m по входному узлу x
-// Возвращает выходной узел графа. Не переключает режимы train/eval
+// Predict выполняет прямой проход (forward) модели m по входному узлу x
+// и возвращает выходной узел графа. Если m или x == nil, возвращается nil.
+//
+// Predict НЕ управляет режимом train/eval — если у вас есть слои вроде
+// Dropout/BatchNorm, контролируйте режим вручную до вызова Predict.
 func Predict(m layers.Module, x *graph.Node) *graph.Node {
 	if m == nil || x == nil {
 		return nil
