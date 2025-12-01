@@ -2,6 +2,8 @@ package optimizers
 
 import (
 	"math"
+	"runtime"
+	"sync"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
@@ -41,8 +43,13 @@ func (a *Adam) Step(params []*graph.Node) {
 	a.t++
 	beta1Corr := 1 - math.Pow(a.Beta1, float64(a.t))
 	beta2Corr := 1 - math.Pow(a.Beta2, float64(a.t))
+	beta1Tail := 1 - a.Beta1
+	beta2Tail := 1 - a.Beta2
+	lr := a.LearningRate
+	eps := a.Epsilon
 
-	for _, p := range params {
+	for _, param := range params {
+		p := param
 		if p.Grad == nil {
 			continue
 		}
@@ -56,21 +63,51 @@ func (a *Adam) Step(params []*graph.Node) {
 
 		mVec := a.m[p]
 		vVec := a.v[p]
+		value := p.Value.Data
+		grad := p.Grad.Data
+		length := len(value)
 
-		for i := range p.Value.Data {
-			grad := p.Grad.Data[i]
+		updateRange := func(start, end int) {
+			for i := start; i < end; i++ {
+				g := grad[i]
 
-			// Обновление первых и вторых моментов
-			mVec[i] = a.Beta1*mVec[i] + (1-a.Beta1)*grad
-			vVec[i] = a.Beta2*vVec[i] + (1-a.Beta2)*grad*grad
+				// Обновление первых и вторых моментов
+				mVec[i] = a.Beta1*mVec[i] + beta1Tail*g
+				vVec[i] = a.Beta2*vVec[i] + beta2Tail*g*g
 
-			// Коррекция смещения
-			mHat := mVec[i] / beta1Corr
-			vHat := vVec[i] / beta2Corr
+				// Коррекция смещения
+				mHat := mVec[i] / beta1Corr
+				vHat := vVec[i] / beta2Corr
 
-			// Обновление параметров
-			p.Value.Data[i] -= a.LearningRate * mHat / (math.Sqrt(vHat) + a.Epsilon)
+				// Обновление параметров
+				value[i] -= lr * mHat / (math.Sqrt(vHat) + eps)
+			}
 		}
+
+		const parallelThreshold = 1024
+		if length < parallelThreshold {
+			updateRange(0, length)
+			continue
+		}
+
+		workers := runtime.GOMAXPROCS(0)
+		if workers > length {
+			workers = length
+		}
+		chunk := (length + workers - 1) / workers
+		var wg sync.WaitGroup
+		for start := 0; start < length; start += chunk {
+			end := start + chunk
+			if end > length {
+				end = length
+			}
+			wg.Add(1)
+			go func(s, e int) {
+				defer wg.Done()
+				updateRange(s, e)
+			}(start, end)
+		}
+		wg.Wait()
 	}
 }
 
