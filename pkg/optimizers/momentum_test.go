@@ -3,7 +3,7 @@ package optimizers_test
 import (
 	"math"
 	"testing"
-	
+
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
@@ -14,13 +14,13 @@ func TestMomentumBasicStep(t *testing.T) {
 	// Создаем параметр с начальным значением и градиентом
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{1.0, 2.0, 3.0},
-			Shape:  []int{3},
+			Data:    []float64{1.0, 2.0, 3.0},
+			Shape:   []int{3},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   []float64{0.1, 0.2, 0.3},
-			Shape:  []int{3},
+			Data:    []float64{0.1, 0.2, 0.3},
+			Shape:   []int{3},
 			Strides: []int{1},
 		},
 	}
@@ -57,13 +57,13 @@ func TestMomentumBasicStep(t *testing.T) {
 func TestMomentumZeroGrad(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{1.0},
-			Shape:  []int{1},
+			Data:    []float64{1.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   []float64{5.0},
-			Shape:  []int{1},
+			Data:    []float64{5.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 	}
@@ -80,26 +80,26 @@ func TestMomentumZeroGrad(t *testing.T) {
 func TestMomentumMultipleParameters(t *testing.T) {
 	param1 := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{1.0},
-			Shape:  []int{1},
+			Data:    []float64{1.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   []float64{0.1},
-			Shape:  []int{1},
+			Data:    []float64{0.1},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 	}
 
 	param2 := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{2.0},
-			Shape:  []int{1},
+			Data:    []float64{2.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   []float64{0.2},
-			Shape:  []int{1},
+			Data:    []float64{0.2},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 	}
@@ -117,18 +117,18 @@ func TestMomentumMultipleParameters(t *testing.T) {
 func TestMomentumNilGradient(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{1.0},
-			Shape:  []int{1},
+			Data:    []float64{1.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 		Grad: nil,
 	}
 
 	optimizer := optimizers.NewMomentum(0.01, 0.9)
-	
+
 	// Не должно быть паники
 	optimizer.Step([]*graph.Node{param})
-	
+
 	// Параметр должен остаться неизменным
 	if param.Value.Data[0] != 1.0 {
 		t.Fatalf("Parameter with nil gradient changed: got %v", param.Value.Data[0])
@@ -141,8 +141,8 @@ func TestMomentumConvergence(t *testing.T) {
 	// Градиент: df/dx = 2x
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   []float64{10.0},
-			Shape:  []int{1},
+			Data:    []float64{10.0},
+			Shape:   []int{1},
 			Strides: []int{1},
 		},
 	}
@@ -153,8 +153,8 @@ func TestMomentumConvergence(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		// Вычисляем градиент: df/dx = 2x
 		param.Grad = &tensor.Tensor{
-			Data:   []float64{2 * param.Value.Data[0]},
-			Shape:  []int{1},
+			Data:    []float64{2 * param.Value.Data[0]},
+			Shape:   []int{1},
 			Strides: []int{1},
 		}
 
@@ -171,13 +171,13 @@ func TestMomentumConvergence(t *testing.T) {
 func BenchmarkMomentumStep(b *testing.B) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   make([]float64, 1000),
-			Shape:  []int{1000},
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   make([]float64, 1000),
-			Shape:  []int{1000},
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
 			Strides: []int{1},
 		},
 	}
@@ -196,17 +196,17 @@ func BenchmarkMomentumStep(b *testing.B) {
 	}
 }
 
-// BenchmarkMomentumZeroGrad бенчмарк для операции ZeroGrad
+// BenchmarkMomentumZeroGrad бенчмарк для операции ZeroGrad w
 func BenchmarkMomentumZeroGrad(b *testing.B) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:   make([]float64, 1000),
-			Shape:  []int{1000},
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
 			Strides: []int{1},
 		},
 		Grad: &tensor.Tensor{
-			Data:   make([]float64, 1000),
-			Shape:  []int{1000},
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
 			Strides: []int{1},
 		},
 	}

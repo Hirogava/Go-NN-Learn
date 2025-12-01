@@ -46,7 +46,7 @@ func (m *Momentum) Step(params []*graph.Node) {
 	}
 }
 
-// ZeroGrad обнуляет градиенты всех параметров
+// ZeroGrad обнуляет градиенты всех параметров w
 func (m *Momentum) ZeroGrad(params []*graph.Node) {
 	for _, p := range params {
 		if p.Grad != nil {
