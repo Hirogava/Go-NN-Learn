@@ -33,7 +33,8 @@ type Adam struct {
 
 // NewAdam создает новый экземпляр оптимизатора Adam.
 // Принимает опциональные параметры для настройки оптимизатора.
-func NewAdam(lr, beta1, beta2, eps float64, opts ...AdamOption) *Adam {
+// Возвращает интерфейс Optimizer для соблюдения принципа инверсии зависимостей.
+func NewAdam(lr, beta1, beta2, eps float64, opts ...AdamOption) Optimizer {
 	a := &Adam{
 		LearningRate: lr,
 		Beta1:        beta1,
@@ -145,4 +146,9 @@ func (a *Adam) ZeroGrad(params []*graph.Node) {
 			}
 		}
 	}
+}
+
+// SetLearningRate устанавливает новый Learning Rate для оптимизатора Adam.
+func (a *Adam) SetLearningRate(lr float64) {
+	a.LearningRate = lr
 }

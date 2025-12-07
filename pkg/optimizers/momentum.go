@@ -117,3 +117,8 @@ func (m *Momentum) ZeroGrad(params []*graph.Node) {
 		}
 	}
 }
+
+// SetLearningRate устанавливает новый Learning Rate для оптимизатора Momentum.
+func (m *Momentum) SetLearningRate(lr float64) {
+	m.LearningRate = lr
+}
