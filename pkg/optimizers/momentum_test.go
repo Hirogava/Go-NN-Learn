@@ -218,3 +218,119 @@ func BenchmarkMomentumZeroGrad(b *testing.B) {
 		optimizer.ZeroGrad([]*graph.Node{param})
 	}
 }
+
+// TestMomentumWeightDecay проверяет применение WeightDecay в Momentum
+func TestMomentumWeightDecay(t *testing.T) {
+	param := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0, 2.0},
+			Shape:   []int{2},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    []float64{0.0, 0.0}, // Нулевой градиент
+			Shape:   []int{2},
+			Strides: []int{1},
+		},
+	}
+
+	// Создаем оптимизатор с WeightDecay
+	optimizer := optimizers.NewMomentum(0.01, 0.9, optimizers.WithMomentumWeightDecay(0.1))
+
+	initialValue := make([]float64, len(param.Value.Data))
+	copy(initialValue, param.Value.Data)
+
+	optimizer.Step([]*graph.Node{param})
+
+	// С WeightDecay параметры должны уменьшаться даже при нулевом градиенте
+	// grad_with_decay = 0 + 0.1 * weight = 0.1 * weight
+	// v = 0.9 * 0 + 0.01 * (0.1 * weight) = 0.001 * weight
+	// param -= v, поэтому param должен уменьшиться
+	for i := range param.Value.Data {
+		if param.Value.Data[i] >= initialValue[i] {
+			t.Fatalf("WeightDecay not applied: param[%d] = %v, expected < %v", i, param.Value.Data[i], initialValue[i])
+		}
+	}
+}
+
+// TestMomentumWeightDecayComparison сравнивает оптимизаторы с и без WeightDecay
+func TestMomentumWeightDecayComparison(t *testing.T) {
+	param1 := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    []float64{0.1},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+	}
+
+	param2 := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    []float64{0.1},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+	}
+
+	optimizerWithoutDecay := optimizers.NewMomentum(0.01, 0.9)
+	optimizerWithDecay := optimizers.NewMomentum(0.01, 0.9, optimizers.WithMomentumWeightDecay(0.01))
+
+	optimizerWithoutDecay.Step([]*graph.Node{param1})
+	optimizerWithDecay.Step([]*graph.Node{param2})
+
+	// С WeightDecay параметр должен уменьшиться больше
+	if param2.Value.Data[0] >= param1.Value.Data[0] {
+		t.Fatalf("WeightDecay should decrease parameter more: with decay=%v, without=%v", param2.Value.Data[0], param1.Value.Data[0])
+	}
+}
+
+// TestMomentumWeightDecayZero проверяет, что без WeightDecay поведение не меняется
+func TestMomentumWeightDecayZero(t *testing.T) {
+	param1 := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0, 2.0, 3.0},
+			Shape:   []int{3},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    []float64{0.1, 0.2, 0.3},
+			Shape:   []int{3},
+			Strides: []int{1},
+		},
+	}
+
+	param2 := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{1.0, 2.0, 3.0},
+			Shape:   []int{3},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    []float64{0.1, 0.2, 0.3},
+			Shape:   []int{3},
+			Strides: []int{1},
+		},
+	}
+
+	optimizer1 := optimizers.NewMomentum(0.01, 0.9)
+	optimizer2 := optimizers.NewMomentum(0.01, 0.9, optimizers.WithMomentumWeightDecay(0.0))
+
+	optimizer1.Step([]*graph.Node{param1})
+	optimizer2.Step([]*graph.Node{param2})
+
+	// Результаты должны быть одинаковыми
+	for i := range param1.Value.Data {
+		if math.Abs(param1.Value.Data[i]-param2.Value.Data[i]) > 1e-10 {
+			t.Fatalf("WeightDecay=0 should behave same as no WeightDecay: got %v vs %v", param1.Value.Data[i], param2.Value.Data[i])
+		}
+	}
+}

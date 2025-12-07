@@ -9,8 +9,8 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
 
-// TestAdamBasicStep проверяет базовое обновление параметров и bias correction.
-func TestAdamBasicStep(t *testing.T) {
+// TestSGDBasicStep проверяет базовое обновление параметров
+func TestSGDBasicStep(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0, 2.0, 3.0},
@@ -24,50 +24,21 @@ func TestAdamBasicStep(t *testing.T) {
 		},
 	}
 
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
+	optimizer := optimizers.NewSGD(0.01)
 	optimizer.Step([]*graph.Node{param})
 
-	expected := []float64{0.99, 1.99, 2.99}
+	// param -= lr * grad
+	// param = [1.0, 2.0, 3.0] - 0.01 * [0.1, 0.2, 0.3] = [0.999, 1.998, 2.997]
+	expected := []float64{0.999, 1.998, 2.997}
 	for i, exp := range expected {
 		if math.Abs(param.Value.Data[i]-exp) > 1e-6 {
-			t.Fatalf("Adam first step mismatch at %d: got %v want %v", i, param.Value.Data[i], exp)
+			t.Fatalf("SGD step mismatch at index %d: got %v want %v", i, param.Value.Data[i], exp)
 		}
 	}
 }
 
-// TestAdamMultipleSteps проверяет накопление моментов.
-func TestAdamMultipleSteps(t *testing.T) {
-	param := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    []float64{1.0},
-			Shape:   []int{1},
-			Strides: []int{1},
-		},
-		Grad: &tensor.Tensor{
-			Data:    []float64{0.5},
-			Shape:   []int{1},
-			Strides: []int{1},
-		},
-	}
-
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
-
-	val0 := param.Value.Data[0]
-	optimizer.Step([]*graph.Node{param})
-	val1 := param.Value.Data[0]
-
-	// Изменяем градиент, чтобы проверить адаптивность
-	param.Grad.Data[0] = 0.1
-	optimizer.Step([]*graph.Node{param})
-	val2 := param.Value.Data[0]
-
-	if !(val0 > val1 && val1 > val2) {
-		t.Fatalf("Adam multiple steps failed: %v -> %v -> %v", val0, val1, val2)
-	}
-}
-
-// TestAdamZeroGrad проверяет обнуление градиентов.
-func TestAdamZeroGrad(t *testing.T) {
+// TestSGDZeroGrad проверяет обнуление градиентов
+func TestSGDZeroGrad(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0},
@@ -81,16 +52,16 @@ func TestAdamZeroGrad(t *testing.T) {
 		},
 	}
 
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
+	optimizer := optimizers.NewSGD(0.01)
 	optimizer.ZeroGrad([]*graph.Node{param})
 
 	if param.Grad.Data[0] != 0.0 {
-		t.Fatalf("Adam ZeroGrad failed: got %v", param.Grad.Data[0])
+		t.Fatalf("SGD ZeroGrad failed: got %v want 0.0", param.Grad.Data[0])
 	}
 }
 
-// TestAdamNilGradient проверяет обработку отсутствующих градиентов.
-func TestAdamNilGradient(t *testing.T) {
+// TestSGDNilGradient проверяет обработку nil градиентов
+func TestSGDNilGradient(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0},
@@ -100,42 +71,51 @@ func TestAdamNilGradient(t *testing.T) {
 		Grad: nil,
 	}
 
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
+	optimizer := optimizers.NewSGD(0.01)
+
+	// Не должно быть паники
 	optimizer.Step([]*graph.Node{param})
 
+	// Параметр должен остаться неизменным
 	if param.Value.Data[0] != 1.0 {
-		t.Fatalf("Parameter with nil grad changed: got %v", param.Value.Data[0])
+		t.Fatalf("Parameter with nil gradient changed: got %v", param.Value.Data[0])
 	}
 }
 
-// TestAdamConvergence проверяет, что оптимизатор сходится к минимуму простой функции.
-func TestAdamConvergence(t *testing.T) {
+// TestSGDConvergence проверяет сходимость к минимуму
+func TestSGDConvergence(t *testing.T) {
+	// Симуляция простой квадратичной функции: f(x) = x^2
+	// Градиент: df/dx = 2x
 	param := &graph.Node{
 		Value: &tensor.Tensor{
-			Data:    []float64{5.0},
+			Data:    []float64{10.0},
 			Shape:   []int{1},
 			Strides: []int{1},
 		},
 	}
 
-	optimizer := optimizers.NewAdam(0.1, 0.9, 0.999, 1e-8)
+	optimizer := optimizers.NewSGD(0.01)
 
-	for i := 0; i < 200; i++ {
+	// Несколько итераций оптимизации
+	for i := 0; i < 500; i++ {
+		// Вычисляем градиент: df/dx = 2x
 		param.Grad = &tensor.Tensor{
 			Data:    []float64{2 * param.Value.Data[0]},
 			Shape:   []int{1},
 			Strides: []int{1},
 		}
+
 		optimizer.Step([]*graph.Node{param})
 	}
 
+	// Параметр должен быть близок к нулю (минимуму)
 	if math.Abs(param.Value.Data[0]) > 0.1 {
-		t.Fatalf("Adam convergence failed: parameter too far from zero %v", param.Value.Data[0])
+		t.Fatalf("SGD convergence failed: parameter too far from zero: %v", param.Value.Data[0])
 	}
 }
 
-// TestAdamWeightDecay проверяет применение WeightDecay в Adam
-func TestAdamWeightDecay(t *testing.T) {
+// TestSGDWeightDecay проверяет применение WeightDecay в SGD
+func TestSGDWeightDecay(t *testing.T) {
 	param := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0, 2.0},
@@ -150,7 +130,7 @@ func TestAdamWeightDecay(t *testing.T) {
 	}
 
 	// Создаем оптимизатор с WeightDecay
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8, optimizers.WithAdamWeightDecay(0.1))
+	optimizer := optimizers.NewSGD(0.01, optimizers.WithSGDWeightDecay(0.1))
 
 	initialValue := make([]float64, len(param.Value.Data))
 	copy(initialValue, param.Value.Data)
@@ -158,6 +138,8 @@ func TestAdamWeightDecay(t *testing.T) {
 	optimizer.Step([]*graph.Node{param})
 
 	// С WeightDecay параметры должны уменьшаться даже при нулевом градиенте
+	// grad_with_decay = 0 + 0.1 * weight = 0.1 * weight
+	// param -= lr * grad_with_decay = param - 0.01 * 0.1 * weight
 	for i := range param.Value.Data {
 		if param.Value.Data[i] >= initialValue[i] {
 			t.Fatalf("WeightDecay not applied: param[%d] = %v, expected < %v", i, param.Value.Data[i], initialValue[i])
@@ -165,8 +147,8 @@ func TestAdamWeightDecay(t *testing.T) {
 	}
 }
 
-// TestAdamWeightDecayComparison сравнивает оптимизаторы с и без WeightDecay
-func TestAdamWeightDecayComparison(t *testing.T) {
+// TestSGDWeightDecayComparison сравнивает оптимизаторы с и без WeightDecay
+func TestSGDWeightDecayComparison(t *testing.T) {
 	param1 := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0},
@@ -193,8 +175,8 @@ func TestAdamWeightDecayComparison(t *testing.T) {
 		},
 	}
 
-	optimizerWithoutDecay := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
-	optimizerWithDecay := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8, optimizers.WithAdamWeightDecay(0.01))
+	optimizerWithoutDecay := optimizers.NewSGD(0.01)
+	optimizerWithDecay := optimizers.NewSGD(0.01, optimizers.WithSGDWeightDecay(0.01))
 
 	optimizerWithoutDecay.Step([]*graph.Node{param1})
 	optimizerWithDecay.Step([]*graph.Node{param2})
@@ -205,8 +187,8 @@ func TestAdamWeightDecayComparison(t *testing.T) {
 	}
 }
 
-// TestAdamWeightDecayZero проверяет, что без WeightDecay поведение не меняется
-func TestAdamWeightDecayZero(t *testing.T) {
+// TestSGDWeightDecayZero проверяет, что без WeightDecay поведение не меняется
+func TestSGDWeightDecayZero(t *testing.T) {
 	param1 := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    []float64{1.0, 2.0, 3.0},
@@ -233,8 +215,8 @@ func TestAdamWeightDecayZero(t *testing.T) {
 		},
 	}
 
-	optimizer1 := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
-	optimizer2 := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8, optimizers.WithAdamWeightDecay(0.0))
+	optimizer1 := optimizers.NewSGD(0.01)
+	optimizer2 := optimizers.NewSGD(0.01, optimizers.WithSGDWeightDecay(0.0))
 
 	optimizer1.Step([]*graph.Node{param1})
 	optimizer2.Step([]*graph.Node{param2})
@@ -246,3 +228,56 @@ func TestAdamWeightDecayZero(t *testing.T) {
 		}
 	}
 }
+
+// BenchmarkSGDStep бенчмарк для операции Step
+func BenchmarkSGDStep(b *testing.B) {
+	param := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
+			Strides: []int{1},
+		},
+	}
+
+	// Заполняем начальные значения
+	for i := range param.Value.Data {
+		param.Value.Data[i] = float64(i) / 100.0
+		param.Grad.Data[i] = 0.01 * float64(i)
+	}
+
+	optimizer := optimizers.NewSGD(0.001)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		optimizer.Step([]*graph.Node{param})
+	}
+}
+
+// BenchmarkSGDZeroGrad бенчмарк для операции ZeroGrad
+func BenchmarkSGDZeroGrad(b *testing.B) {
+	param := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
+			Strides: []int{1},
+		},
+		Grad: &tensor.Tensor{
+			Data:    make([]float64, 1000),
+			Shape:   []int{1000},
+			Strides: []int{1},
+		},
+	}
+
+	optimizer := optimizers.NewSGD(0.001)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		optimizer.ZeroGrad([]*graph.Node{param})
+	}
+}
+

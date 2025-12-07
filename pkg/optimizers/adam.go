@@ -8,6 +8,16 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
+// AdamOption - функциональная опция для настройки оптимизатора Adam.
+type AdamOption func(*Adam)
+
+// WithAdamWeightDecay устанавливает коэффициент L2 регуляризации (weight decay) для Adam.
+func WithAdamWeightDecay(decay float64) AdamOption {
+	return func(a *Adam) {
+		a.weightDecay = decay
+	}
+}
+
 // Adam - оптимизатор Adaptive Moment Estimation.
 // Сочетает Momentum и RMSProp, используя первые и вторые моменты градиента.
 type Adam struct {
@@ -15,22 +25,29 @@ type Adam struct {
 	Beta1        float64                   // Коэффициент для первого момента
 	Beta2        float64                   // Коэффициент для второго момента
 	Epsilon      float64                   // Малое число для стабильности
+	weightDecay  float64                   // Коэффициент L2 регуляризации (weight decay)
 	m            map[*graph.Node][]float64 // Первый момент
 	v            map[*graph.Node][]float64 // Второй момент
 	t            int                       // Номер шага для bias correction
 }
 
 // NewAdam создает новый экземпляр оптимизатора Adam.
-func NewAdam(lr, beta1, beta2, eps float64) *Adam {
-	return &Adam{
+// Принимает опциональные параметры для настройки оптимизатора.
+func NewAdam(lr, beta1, beta2, eps float64, opts ...AdamOption) *Adam {
+	a := &Adam{
 		LearningRate: lr,
 		Beta1:        beta1,
 		Beta2:        beta2,
 		Epsilon:      eps,
+		weightDecay:  0.0,
 		m:            make(map[*graph.Node][]float64),
 		v:            make(map[*graph.Node][]float64),
 		t:            0,
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
 }
 
 // Step обновляет параметры методом Adam.
@@ -70,6 +87,11 @@ func (a *Adam) Step(params []*graph.Node) {
 		updateRange := func(start, end int) {
 			for i := start; i < end; i++ {
 				g := grad[i]
+
+				// Применяем WeightDecay: grad_with_decay = grad + lambda * weight
+				if a.weightDecay > 0 {
+					g += a.weightDecay * value[i]
+				}
 
 				// Обновление первых и вторых моментов
 				mVec[i] = a.Beta1*mVec[i] + beta1Tail*g
