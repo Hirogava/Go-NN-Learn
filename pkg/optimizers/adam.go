@@ -64,6 +64,9 @@ func (a *Adam) Step(params []*graph.Node) {
 	beta2Tail := 1 - a.Beta2
 	lr := a.LearningRate
 	eps := a.Epsilon
+	beta1 := a.Beta1
+	beta2 := a.Beta2
+	weightDecay := a.weightDecay
 
 	for _, param := range params {
 		p := param
@@ -89,13 +92,13 @@ func (a *Adam) Step(params []*graph.Node) {
 				g := grad[i]
 
 				// Применяем WeightDecay: grad_with_decay = grad + lambda * weight
-				if a.weightDecay > 0 {
-					g += a.weightDecay * value[i]
+				if weightDecay > 0 {
+					g += weightDecay * value[i]
 				}
 
 				// Обновление первых и вторых моментов
-				mVec[i] = a.Beta1*mVec[i] + beta1Tail*g
-				vVec[i] = a.Beta2*vVec[i] + beta2Tail*g*g
+				mVec[i] = beta1*mVec[i] + beta1Tail*g
+				vVec[i] = beta2*vVec[i] + beta2Tail*g*g
 
 				// Коррекция смещения
 				mHat := mVec[i] / beta1Corr
