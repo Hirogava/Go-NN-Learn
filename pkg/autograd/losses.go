@@ -7,6 +7,11 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
 
+type LossOp interface {
+	Forward() *tensor.Tensor
+	Backward(grad *tensor.Tensor)
+}
+
 // MSELoss (Mean Squared Error Loss)
 // Используется для задач регрессии
 // Forward: Loss = mean((y_pred - y_true)^2)
