@@ -245,22 +245,14 @@ func TestOneCycleLRGetLastLR(t *testing.T) {
 // TestSchedulerWithOptimizer проверяет интеграцию scheduler с оптимизатором
 func TestSchedulerWithOptimizer(t *testing.T) {
 	// Создаем оптимизатор (возвращает интерфейс Optimizer)
-	optimizer := optimizers.NewSGD(0.1)
+	sgd := optimizers.NewSGD(0.1)
 
 	// Создаем scheduler
 	scheduler := optimizers.NewStepLR(0.1, 0.5, 2)
 
 	// Проверяем, что оптимизатор реализует интерфейс LearningRateAdjustable
-	adjustable, ok := optimizer.(optimizers.LearningRateAdjustable)
-	if !ok {
-		t.Fatalf("SGD should implement LearningRateAdjustable interface")
-	}
+	adjustable := optimizers.LearningRateAdjustable(sgd)
 
-	// Для проверки внутреннего состояния используем type assertion
-	sgd, ok := optimizer.(*optimizers.StochasticGradientDescent)
-	if !ok {
-		t.Fatalf("Failed to assert optimizer type")
-	}
 	initialLR := sgd.LearningRate
 	if math.Abs(initialLR-0.1) > 1e-10 {
 		t.Fatalf("Initial LR: expected 0.1, got %v", initialLR)
@@ -280,61 +272,37 @@ func TestSchedulerWithOptimizer(t *testing.T) {
 // TestAllOptimizersImplementSetLearningRate проверяет, что все оптимизаторы реализуют SetLearningRate
 func TestAllOptimizersImplementSetLearningRate(t *testing.T) {
 	// Проверяем SGD
-	optimizer := optimizers.NewSGD(0.1)
-	adjustable, ok := optimizer.(optimizers.LearningRateAdjustable)
-	if !ok {
-		t.Fatalf("SGD should implement LearningRateAdjustable interface")
-	}
+	sgd := optimizers.NewSGD(0.1)
+	adjustable := optimizers.LearningRateAdjustable(sgd)
 	adjustable.SetLearningRate(0.05)
-	sgd, ok := optimizer.(*optimizers.StochasticGradientDescent)
-	if !ok {
-		t.Fatalf("Failed to assert SGD type")
-	}
+
 	if sgd.LearningRate != 0.05 {
 		t.Fatalf("SGD: SetLearningRate failed, got %v", sgd.LearningRate)
 	}
 
 	// Проверяем Momentum
-	optimizer = optimizers.NewMomentum(0.1, 0.9)
-	adjustable, ok = optimizer.(optimizers.LearningRateAdjustable)
-	if !ok {
-		t.Fatalf("Momentum should implement LearningRateAdjustable interface")
-	}
+	momentum := optimizers.NewMomentum(0.1, 0.9)
+	adjustable = optimizers.LearningRateAdjustable(momentum)
 	adjustable.SetLearningRate(0.05)
-	momentum, ok := optimizer.(*optimizers.Momentum)
-	if !ok {
-		t.Fatalf("Failed to assert Momentum type")
-	}
+
 	if momentum.LearningRate != 0.05 {
 		t.Fatalf("Momentum: SetLearningRate failed, got %v", momentum.LearningRate)
 	}
 
 	// Проверяем Adam
-	optimizer = optimizers.NewAdam(0.1, 0.9, 0.999, 1e-8)
-	adjustable, ok = optimizer.(optimizers.LearningRateAdjustable)
-	if !ok {
-		t.Fatalf("Adam should implement LearningRateAdjustable interface")
-	}
+	adam := optimizers.NewAdam(0.1, 0.9, 0.999, 1e-8)
+	adjustable = optimizers.LearningRateAdjustable(adam)
 	adjustable.SetLearningRate(0.05)
-	adam, ok := optimizer.(*optimizers.Adam)
-	if !ok {
-		t.Fatalf("Failed to assert Adam type")
-	}
+
 	if adam.LearningRate != 0.05 {
 		t.Fatalf("Adam: SetLearningRate failed, got %v", adam.LearningRate)
 	}
 
 	// Проверяем RMSProp
-	optimizer = optimizers.NewRMSProp(0.1, 0.9, 1e-8)
-	adjustable, ok = optimizer.(optimizers.LearningRateAdjustable)
-	if !ok {
-		t.Fatalf("RMSProp should implement LearningRateAdjustable interface")
-	}
+	rmsprop := optimizers.NewRMSProp(0.1, 0.9, 1e-8)
+	adjustable = optimizers.LearningRateAdjustable(rmsprop)
 	adjustable.SetLearningRate(0.05)
-	rmsprop, ok := optimizer.(*optimizers.RMSProp)
-	if !ok {
-		t.Fatalf("Failed to assert RMSProp type")
-	}
+
 	if rmsprop.LearningRate != 0.05 {
 		t.Fatalf("RMSProp: SetLearningRate failed, got %v", rmsprop.LearningRate)
 	}

@@ -33,8 +33,7 @@ type Adam struct {
 
 // NewAdam создает новый экземпляр оптимизатора Adam.
 // Принимает опциональные параметры для настройки оптимизатора.
-// Возвращает интерфейс Optimizer для соблюдения принципа инверсии зависимостей.
-func NewAdam(lr, beta1, beta2, eps float64, opts ...AdamOption) Optimizer {
+func NewAdam(lr, beta1, beta2, eps float64, opts ...AdamOption) *Adam {
 	a := &Adam{
 		LearningRate: lr,
 		Beta1:        beta1,

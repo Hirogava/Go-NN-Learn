@@ -26,8 +26,7 @@ type StochasticGradientDescent struct {
 
 // NewSGD создает новый экземпляр SGD с заданным learning rate.
 // Принимает опциональные параметры для настройки оптимизатора.
-// Возвращает интерфейс Optimizer для соблюдения принципа инверсии зависимостей.
-func NewSGD(lr float64, opts ...SGDOption) Optimizer {
+func NewSGD(lr float64, opts ...SGDOption) *StochasticGradientDescent {
 	s := &StochasticGradientDescent{
 		LearningRate: lr,
 		weightDecay:  0.0,

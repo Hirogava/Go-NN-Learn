@@ -30,8 +30,7 @@ type RMSProp struct {
 
 // NewRMSProp создает новый экземпляр оптимизатора RMSProp.
 // Принимает опциональные параметры для настройки оптимизатора.
-// Возвращает интерфейс Optimizer для соблюдения принципа инверсии зависимостей.
-func NewRMSProp(lr, alpha, eps float64, opts ...RMSPropOption) Optimizer {
+func NewRMSProp(lr, alpha, eps float64, opts ...RMSPropOption) *RMSProp {
 	r := &RMSProp{
 		LearningRate: lr,
 		Alpha:        alpha,
