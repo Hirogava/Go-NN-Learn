@@ -101,3 +101,8 @@ func (s *StochasticGradientDescent) ZeroGrad(params []*graph.Node) {
 		}
 	}
 }
+
+// SetLearningRate устанавливает новый Learning Rate для оптимизатора SGD.
+func (s *StochasticGradientDescent) SetLearningRate(lr float64) {
+	s.LearningRate = lr
+}

@@ -121,3 +121,8 @@ func (r *RMSProp) ZeroGrad(params []*graph.Node) {
 		}
 	}
 }
+
+// SetLearningRate устанавливает новый Learning Rate для оптимизатора RMSProp.
+func (r *RMSProp) SetLearningRate(lr float64) {
+	r.LearningRate = lr
+}

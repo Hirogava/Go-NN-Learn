@@ -146,3 +146,8 @@ func (a *Adam) ZeroGrad(params []*graph.Node) {
 		}
 	}
 }
+
+// SetLearningRate устанавливает новый Learning Rate для оптимизатора Adam.
+func (a *Adam) SetLearningRate(lr float64) {
+	a.LearningRate = lr
+}
