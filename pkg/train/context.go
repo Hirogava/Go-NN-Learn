@@ -23,8 +23,8 @@ type TrainingContext struct {
 	History *MetricsHistory    // История метрик по эпохам
 
 	// Модель и параметры
-	Model  layers.Module   // Обучаемая модель
-	Params []*graph.Node   // Параметры модели (кэш от Model.Params())
+	Model  layers.Module // Обучаемая модель
+	Params []*graph.Node // Параметры модели (кэш от Model.Params())
 
 	// Флаги управления
 	StopTraining bool // Установить в true для досрочной остановки обучения
@@ -45,8 +45,8 @@ func NewTrainingContext(model layers.Module, numEpochs int) *TrainingContext {
 // Thread-safe для использования в многопоточных сценариях.
 type MetricsHistory struct {
 	mu      sync.RWMutex
-	Epochs  []int                    // Список эпох: [0, 1, 2, ...]
-	Metrics map[string][]float64     // Метрики по эпохам: {"loss": [0.5, 0.4, ...], "acc": [0.8, 0.85, ...]}
+	Epochs  []int                // Список эпох: [0, 1, 2, ...]
+	Metrics map[string][]float64 // Метрики по эпохам: {"loss": [0.5, 0.4, ...], "acc": [0.8, 0.85, ...]}
 }
 
 // NewMetricsHistory создает новую историю метрик.
