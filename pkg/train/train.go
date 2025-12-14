@@ -12,80 +12,116 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
 
+// Trainer - основной класс для обучения модели
+// Содержит всю необходимую информацию для работы TrainLoop
 type Trainer struct {
 	model       layers.Module
 	dataLoader  dataloader.DataLoader
 	opt         optimizers.Optimizer
 	lossFn      autograd.LossOp
 	lrScheduler optimizers.LearningRateScheduler
-	epochs      int
+	metric      metrics.Metric
 
-	totalLoss  float64
-	numBatches int
-	// В будущем возможно добавление callback'ов
+	callbacks CallbackList
+
+	context TrainingContext
 }
 
-func NewTrainer(model layers.Module, dataLoader dataloader.DataLoader, opt optimizers.Optimizer, lossFn autograd.LossOp, lrScheduler optimizers.LearningRateScheduler, epochs int) *Trainer {
+// NewTrainer создает новый экземпляр Trainer
+func NewTrainer(
+	model layers.Module,
+	dataLoader dataloader.DataLoader,
+	opt optimizers.Optimizer,
+	lossFn autograd.LossOp,
+	lrScheduler optimizers.LearningRateScheduler,
+	metric metrics.Metric,
+	callbacks CallbackList,
+
+	epochNumber int,
+) *Trainer {
 	return &Trainer{
 		model:       model,
 		dataLoader:  dataLoader,
 		opt:         opt,
 		lossFn:      lossFn,
 		lrScheduler: lrScheduler,
-		epochs:      epochs,
-		totalLoss:   0,
-		numBatches:  0,
+		metric:      metric,
+		callbacks:   callbacks,
+		context:     *NewTrainingContext(model, epochNumber),
 	}
 }
 
+// Train содержит основной TrainLoop для обучения модели
 func (t *Trainer) Train() {
-	for epoch := 0; epoch < t.epochs; epoch++ {
-		t.dataLoader.Reset()
+	t.callbacks.OnTrainBegin(&t.context)
+	for epoch := 0; epoch < t.context.NumEpochs; epoch++ {
+		// Обновляем контекст для текущей эпохи и сбрасываем
+		// счётчик батчей
+		t.resetContext(epoch)
 
-		var totalLoss float64
-		var numBatches int
+		t.callbacks.OnEpochBegin(&t.context)
 
-		// Train loop, завершается когда закончатся батчи
+		t.dataLoader.Reset() // Сбрасываем итератор батчей
+
+		// Train loop, завершается, когда закончатся батчи
 		for {
 			if !t.dataLoader.HasNext() {
 				break
 			}
 			batch := t.dataLoader.Next()
-			// TODO: может вылезти паника
 
-			// Берем входные данные
-			input := batch.Features
-			labels := batch.Targets
+			t.callbacks.OnBatchBegin(&t.context)
 
-			n := graph.NewNode(input, nil, nil) // Засовываем в граф
-			pred := t.model.Forward(n)          // Делаем Forward проход
-
-			for _, layer := range t.model.Layers() {
-				layer.Params()
-			}
-
-			// Вычисляем потери (loss)
-			t.calculateLoss(pred, labels)
-
-			// Рассчет Accuracy
-			acc := metrics.NewAccuracy()
-			err := acc.Update(pred, batch.Features)
+			err := t.processBatch(batch)
 			if err != nil {
 				continue
 			}
-			fmt.Printf("Epoch %d, Accuracy: %v\n", epoch, acc.Value())
+
+			t.callbacks.OnBatchEnd(&t.context)
 		}
-		if t.numBatches == 0 {
+		if t.context.Batch == 0 {
 			fmt.Println("No batches processed.")
 			break
 		}
 		lr := t.lrScheduler.Step()
 		t.opt.SetLearningRate(lr)
-		// Тут дальше коллбэки и тд
+		t.callbacks.OnEpochEnd(&t.context)
 	}
+	t.callbacks.OnTrainEnd(&t.context)
 }
 
-func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) {
+func (t *Trainer) resetContext(epoch int) {
+	t.context.Epoch = epoch
+	t.context.Batch = 0
+}
+
+func (t *Trainer) processBatch(batch *dataloader.Batch) error {
+	// Берем входные данные
+	input := batch.Features
+	labels := batch.Targets
+
+	n := graph.NewNode(input, nil, nil) // Засовываем в граф
+	pred := t.model.Forward(n)          // Делаем Forward проход
+
+	// Вычисляем потери (loss)
+	lossVal := t.calculateLoss(pred, labels)
+
+	// Рассчет метрик
+	err := t.calculateMetrics(pred, labels)
+	if err != nil {
+		return err
+	}
+
+	if t.context.Metrics == nil {
+		t.context.Metrics = make(map[string]float64)
+	}
+	t.context.Metrics["loss"] = lossVal
+	t.context.Metrics["accuracy"] = t.metric.Value()
+	t.context.History.Append(t.context.Epoch, t.context.Metrics)
+	return nil
+}
+
+func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) float64 {
 	var lossNode autograd.LossOp
 	// TODO: проверить все ли функции потерь затронуты.
 	switch t.lossFn.(type) {
@@ -96,7 +132,9 @@ func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) {
 	case *autograd.CrossEntropyLogitsOp:
 		lossNode = autograd.NewCrossEntropyLogitsOp(pred, target)
 	}
-
+	if lossNode == nil {
+		return 0
+	}
 	// Ну хоть убейте, не знаю как обнулить градиенды эффективнее :(
 	// Умные люди перепишите с горутинами :)
 	for _, layer := range t.model.Layers() {
@@ -106,8 +144,34 @@ func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) {
 		}
 	}
 
+	lossTensor := lossNode.Forward()
+	var lossVal float64
+	if lossTensor != nil && len(lossTensor.Data) > 0 {
+		lossVal = lossTensor.Data[0]
+	}
+
 	lossNode.Backward(tensor.Ones(1))
-	t.numBatches++
+	t.context.Batch++
 
 	t.opt.Step(t.model.Params())
+
+	return lossVal
+}
+
+func (t *Trainer) calculateMetrics(pred *graph.Node, labels *tensor.Tensor) error {
+	var predVals []float64
+	if pred != nil && pred.Value != nil {
+		predVals = pred.Value.Data
+	} else {
+		predVals = []float64{}
+	}
+	labelVals := []float64{}
+	if labels != nil {
+		labelVals = labels.Data
+	}
+
+	if err := t.metric.Update(predVals, labelVals); err != nil {
+		return err
+	}
+	return nil
 }
