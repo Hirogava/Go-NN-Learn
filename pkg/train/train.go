@@ -20,6 +20,7 @@ type Trainer struct {
 	opt         optimizers.Optimizer
 	lossFn      autograd.LossOp
 	lrScheduler optimizers.LearningRateScheduler
+	metric      metrics.Metric
 
 	callbacks CallbackList
 
@@ -33,6 +34,7 @@ func NewTrainer(
 	opt optimizers.Optimizer,
 	lossFn autograd.LossOp,
 	lrScheduler optimizers.LearningRateScheduler,
+	metric metrics.Metric,
 	callbacks CallbackList,
 
 	epochNumber int,
@@ -43,6 +45,7 @@ func NewTrainer(
 		opt:         opt,
 		lossFn:      lossFn,
 		lrScheduler: lrScheduler,
+		metric:      metric,
 		callbacks:   callbacks,
 		context:     *NewTrainingContext(model, epochNumber),
 	}
@@ -52,7 +55,8 @@ func NewTrainer(
 func (t *Trainer) Train() {
 	t.callbacks.OnTrainBegin(&t.context)
 	for epoch := 0; epoch < t.context.NumEpochs; epoch++ {
-		// Обновляем контекст для текущей эпохи и сбрасываем счётчик батчей
+		// Обновляем контекст для текущей эпохи и сбрасываем
+		// счётчик батчей
 		t.resetContext(epoch)
 
 		t.callbacks.OnEpochBegin(&t.context)
@@ -102,9 +106,8 @@ func (t *Trainer) processBatch(batch *dataloader.Batch) error {
 	// Вычисляем потери (loss)
 	lossVal := t.calculateLoss(pred, labels)
 
-	// Рассчет Accuracy
-	acc := metrics.NewAccuracy()
-	err := acc.Update(pred, labels)
+	// Рассчет метрик
+	err := t.calculateMetrics(pred, labels)
 	if err != nil {
 		return err
 	}
@@ -113,7 +116,7 @@ func (t *Trainer) processBatch(batch *dataloader.Batch) error {
 		t.context.Metrics = make(map[string]float64)
 	}
 	t.context.Metrics["loss"] = lossVal
-	t.context.Metrics["accuracy"] = acc.Value()
+	t.context.Metrics["accuracy"] = t.metric.Value()
 	t.context.History.Append(t.context.Epoch, t.context.Metrics)
 	return nil
 }
@@ -153,4 +156,22 @@ func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) float64
 	t.opt.Step(t.model.Params())
 
 	return lossVal
+}
+
+func (t *Trainer) calculateMetrics(pred *graph.Node, labels *tensor.Tensor) error {
+	var predVals []float64
+	if pred != nil && pred.Value != nil {
+		predVals = pred.Value.Data
+	} else {
+		predVals = []float64{}
+	}
+	labelVals := []float64{}
+	if labels != nil {
+		labelVals = labels.Data
+	}
+
+	if err := t.metric.Update(predVals, labelVals); err != nil {
+		return err
+	}
+	return nil
 }
