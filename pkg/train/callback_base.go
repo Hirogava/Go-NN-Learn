@@ -1,4 +1,4 @@
-package training
+package train
 
 // BaseCallback предоставляет базовую реализацию интерфейса Callback.
 // Все методы возвращают nil (no-op).

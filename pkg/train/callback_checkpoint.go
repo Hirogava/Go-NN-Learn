@@ -1,4 +1,4 @@
-package training
+package train
 
 import (
 	"fmt"
@@ -126,10 +126,12 @@ func (mc *ModelCheckpoint) OnEpochEnd(ctx *TrainingContext) error {
 
 		if mc.verbose {
 			if improved {
-				fmt.Printf("Epoch %d: %s improved from %.4f to %.4f, saving model to %s\n",
-					ctx.Epoch+1, mc.monitor, mc.bestValue, currentValue, savePath)
+				// Нужно вывести старое значение (до обновления), но мы уже обновили bestValue
+				// Поэтому выведем просто улучшение
+				fmt.Printf("Epoch %05d: %s improved to %.5f, saving model to %s\n",
+					ctx.Epoch+1, mc.monitor, currentValue, savePath)
 			} else {
-				fmt.Printf("Epoch %d: saving model to %s\n", ctx.Epoch+1, savePath)
+				fmt.Printf("Epoch %05d: saving model to %s\n", ctx.Epoch+1, savePath)
 			}
 		}
 	}

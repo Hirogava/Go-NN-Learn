@@ -1,4 +1,4 @@
-package training_test
+package train_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/training"
+	"github.com/Hirogava/Go-NN-Learn/pkg/train"
 )
 
 // simpleInit - простая функция инициализации для примеров
@@ -41,12 +41,12 @@ func Example_basicTrainingLoop() {
 	}
 
 	// Создаем контекст обучения
-	ctx := training.NewTrainingContext(model, 10)
+	ctx := train.NewTrainingContext(model, 10)
 
 	// Настраиваем колбэки
-	callbacks := training.NewCallbackList(
-		training.NewProgressBar(true, true),
-		training.NewEarlyStopping("loss", 3, "min", 0.001, true),
+	callbacks := train.NewCallbackList(
+		train.NewProgressBar(true, true),
+		train.NewEarlyStopping("loss", 3, "min", 0.001, true),
 	)
 
 	// Начало обучения
@@ -93,7 +93,7 @@ func Example_modelCheckpoint() {
 	}
 
 	// Создаем колбэк для сохранения лучшей модели
-	checkpoint := training.NewModelCheckpoint(
+	checkpoint := train.NewModelCheckpoint(
 		"models/best_model.ckpt", // Путь к файлу
 		"val_loss",                // Какую метрику отслеживать
 		"min",                     // Минимизировать метрику
@@ -102,7 +102,7 @@ func Example_modelCheckpoint() {
 		true,                      // Выводить сообщения
 	)
 
-	ctx := training.NewTrainingContext(model, 5)
+	ctx := train.NewTrainingContext(model, 5)
 	checkpoint.OnTrainBegin(ctx)
 
 	for epoch := 0; epoch < 5; epoch++ {
@@ -123,14 +123,14 @@ func Example_metricsLogger() {
 	}
 
 	// Создаем логгер в формате CSV
-	logger := training.NewMetricsLogger(
-		"logs/training.csv",      // Путь к файлу
-		training.LogFormatCSV,    // Формат CSV
+	logger := train.NewMetricsLogger(
+		"logs/train.csv",      // Путь к файлу
+		train.LogFormatCSV,    // Формат CSV
 		true,                     // Выводить в консоль
 		1,                        // Логировать каждую эпоху
 	)
 
-	ctx := training.NewTrainingContext(model, 3)
+	ctx := train.NewTrainingContext(model, 3)
 	logger.OnTrainBegin(ctx)
 
 	for epoch := 0; epoch < 3; epoch++ {
@@ -156,7 +156,7 @@ func Example_earlyStopping() {
 	}
 
 	// Остановка если val_loss не улучшается 3 эпохи подряд
-	earlyStopping := training.NewEarlyStopping(
+	earlyStopping := train.NewEarlyStopping(
 		"val_loss", // Отслеживаемая метрика
 		3,          // Patience (терпение) - сколько эпох ждать
 		"min",      // Минимизировать метрику
@@ -164,7 +164,7 @@ func Example_earlyStopping() {
 		true,       // Выводить сообщения
 	)
 
-	ctx := training.NewTrainingContext(model, 10)
+	ctx := train.NewTrainingContext(model, 10)
 	earlyStopping.OnTrainBegin(ctx)
 
 	losses := []float64{0.5, 0.4, 0.35, 0.34, 0.34, 0.34, 0.34}
@@ -190,24 +190,24 @@ func Example_multipleCallbacks() {
 	}
 
 	// Комбинируем несколько колбэков
-	callbacks := training.NewCallbackList(
+	callbacks := train.NewCallbackList(
 		// Прогресс-бар
-		training.NewProgressBar(true, true),
+		train.NewProgressBar(true, true),
 
 		// Логирование в JSON
-		training.NewMetricsLogger("logs/training.json", training.LogFormatJSON, false, 1),
+		train.NewMetricsLogger("logs/train.json", train.LogFormatJSON, false, 1),
 
 		// Сохранение чекпоинтов каждые 5 эпох
-		training.NewModelCheckpoint("models/model_{epoch}.ckpt", "", "", 5, false, true),
+		train.NewModelCheckpoint("models/model_{epoch}.ckpt", "", "", 5, false, true),
 
 		// Сохранение лучшей модели
-		training.NewModelCheckpoint("models/best.ckpt", "val_loss", "min", 0, true, true),
+		train.NewModelCheckpoint("models/best.ckpt", "val_loss", "min", 0, true, true),
 
 		// Досрочная остановка
-		training.NewEarlyStopping("val_loss", 10, "min", 0.0001, true),
+		train.NewEarlyStopping("val_loss", 10, "min", 0.0001, true),
 	)
 
-	ctx := training.NewTrainingContext(model, 100)
+	ctx := train.NewTrainingContext(model, 100)
 
 	// Все колбэки будут вызваны автоматически
 	callbacks.OnTrainBegin(ctx)
@@ -234,21 +234,21 @@ func Example_multipleCallbacks() {
 func Example_customCallback() {
 	// Пользовательский колбэк, который печатает сообщение каждые N эпох
 	type PrintCallback struct {
-		training.BaseCallback
+		train.BaseCallback
 		frequency int
 	}
 
 	printCallback := &PrintCallback{frequency: 5}
 
 	// Переопределяем только нужный метод
-	printCallback.BaseCallback = training.BaseCallback{}
+	printCallback.BaseCallback = train.BaseCallback{}
 
 	model := &SimpleModel{
 		layer: layers.NewDense(10, 5, simpleInit),
 	}
 
-	ctx := training.NewTrainingContext(model, 20)
-	callbacks := training.NewCallbackList(printCallback)
+	ctx := train.NewTrainingContext(model, 20)
+	callbacks := train.NewCallbackList(printCallback)
 
 	callbacks.OnTrainBegin(ctx)
 
@@ -264,7 +264,7 @@ func Example_customCallback() {
 
 // Example_metricsHistory демонстрирует работу с историей метрик
 func Example_metricsHistory() {
-	history := training.NewMetricsHistory()
+	history := train.NewMetricsHistory()
 
 	// Добавляем метрики за несколько эпох
 	for epoch := 0; epoch < 10; epoch++ {
