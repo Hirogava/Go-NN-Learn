@@ -20,8 +20,7 @@ func safeDiv(num, den float64) float64 {
 	return num / den
 }
 
-// Batch helpers
-func AccuracyFromLabels(yPred []int, yTrue []int) (float64, error) {
+func AccuracyFromLabels(yPred []float64, yTrue []float64) (float64, error) {
 	if len(yPred) != len(yTrue) {
 		return 0, errors.New("yPred and yTrue must have same length")
 	}
@@ -30,7 +29,7 @@ func AccuracyFromLabels(yPred []int, yTrue []int) (float64, error) {
 	}
 	correct := 0
 	for i := range yPred {
-		if yPred[i] == yTrue[i] {
+		if int(yPred[i]) == int(yTrue[i]) {
 			correct++
 		}
 	}
@@ -51,20 +50,20 @@ func MAEFromSlices(yPred []float64, yTrue []float64) (float64, error) {
 	return s / float64(len(yPred)), nil
 }
 
-func BinaryPrecisionRecallF1(yPred []int, yTrue []int, positiveLabel int) (precision, recall, f1 float64, err error) {
+func BinaryPrecisionRecallF1(yPred []float64, yTrue []float64, positiveLabel int) (precision, recall, f1 float64, err error) {
 	if len(yPred) != len(yTrue) {
 		return 0, 0, 0, errors.New("yPred and yTrue must have same length")
 	}
 	tp, fp, fn := 0, 0, 0
 	for i := range yPred {
-		if yPred[i] == positiveLabel {
-			if yTrue[i] == positiveLabel {
+		if int(yPred[i]) == positiveLabel {
+			if int(yTrue[i]) == positiveLabel {
 				tp++
 			} else {
 				fp++
 			}
 		} else {
-			if yTrue[i] == positiveLabel {
+			if int(yTrue[i]) == positiveLabel {
 				fn++
 			}
 		}
@@ -79,7 +78,6 @@ func BinaryPrecisionRecallF1(yPred []int, yTrue []int, positiveLabel int) (preci
 	return precision, recall, f1, nil
 }
 
-// Accuracy (thread-safe)
 type Accuracy struct {
 	mu      sync.Mutex
 	correct int64
@@ -89,17 +87,17 @@ type Accuracy struct {
 func NewAccuracy() *Accuracy { return &Accuracy{} }
 
 func (m *Accuracy) Update(preds interface{}, labels interface{}) error {
-	p, ok1 := preds.([]int)
-	l, ok2 := labels.([]int)
+	p, ok1 := preds.([]float64)
+	l, ok2 := labels.([]float64)
 	if !ok1 || !ok2 {
-		return errors.New("Accuracy.Update expects []int preds and []int labels")
+		return errors.New("Accuracy.Update expects []float64 preds and []float64 labels")
 	}
 	if len(p) != len(l) {
 		return errors.New("preds and labels must have same length")
 	}
 	var localCorrect int64
 	for i := range p {
-		if p[i] == l[i] {
+		if int(p[i]) == int(l[i]) {
 			localCorrect++
 		}
 	}
@@ -128,7 +126,6 @@ func (m *Accuracy) Reset() {
 
 func (m *Accuracy) Name() string { return "accuracy" }
 
-// MAE (thread-safe)
 type MAE struct {
 	mu    sync.Mutex
 	sum   float64
@@ -175,7 +172,6 @@ func (m *MAE) Reset() {
 
 func (m *MAE) Name() string { return "mae" }
 
-// ConfusionMatrix (thread-safe)
 type ConfusionMatrix struct {
 	mu     sync.RWMutex
 	counts map[int]map[int]int64
@@ -187,18 +183,18 @@ func NewConfusionMatrix() *ConfusionMatrix {
 }
 
 func (cm *ConfusionMatrix) Update(preds interface{}, labels interface{}) error {
-	p, ok1 := preds.([]int)
-	l, ok2 := labels.([]int)
+	p, ok1 := preds.([]float64)
+	l, ok2 := labels.([]float64)
 	if !ok1 || !ok2 {
-		return errors.New("ConfusionMatrix.Update expects []int preds and []int labels")
+		return errors.New("ConfusionMatrix.Update expects []float64 preds and []float64 labels")
 	}
 	if len(p) != len(l) {
 		return errors.New("preds and labels must have same length")
 	}
 	local := map[int]map[int]int64{}
 	for i := range p {
-		t := l[i]
-		pr := p[i]
+		t := int(l[i])
+		pr := int(p[i])
 		if _, ok := local[t]; !ok {
 			local[t] = map[int]int64{}
 		}
