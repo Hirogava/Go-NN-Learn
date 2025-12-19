@@ -2,9 +2,16 @@ package matrix
 
 import (
 	"errors"
+	"runtime"
 	"sync"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+)
+
+const (
+	smallMatrixThreshold = 64
+	blockSize            = 64
+	parallelThreshold    = 128
 )
 
 func NewMatrix(data [][]float64) (*tensor.Matrix, error) {
@@ -49,52 +56,160 @@ func MatMul(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
 	if x1.Cols != x2.Rows {
 		return nil, errors.New("матрицы несовместные")
 	}
+
+	totalOps := rows * colsx2 * colsx1
+	if totalOps < smallMatrixThreshold*smallMatrixThreshold*smallMatrixThreshold {
+		return matMulSimple(x1, x2, rows, colsx2, colsx1)
+	} else if rows < parallelThreshold && colsx2 < parallelThreshold {
+		return matMulBlocked(x1, x2, rows, colsx2, colsx1)
+	} else {
+		return matMulParallelBlocked(x1, x2, rows, colsx2, colsx1)
+	}
+}
+
+func matMulSimple(x1, x2 *tensor.Matrix, rows, colsx2, colsx1 int) (*tensor.Matrix, error) {
 	res := &tensor.Matrix{
 		Data: make([]float64, rows*colsx2),
 		Rows: rows,
 		Cols: colsx2,
 	}
+
+	x1Data := x1.Data
+	x2Data := x2.Data
+	resData := res.Data
+	x1Cols := x1.Cols
+	x2Cols := x2.Cols
+
 	for i := 0; i < rows; i++ {
-		for j := 0; j < colsx2; j++ {
-			sum := 0.0
-			for k := 0; k < colsx1; k++ {
-				sum += At(x1, i, k) * At(x2, k, j)
+		resRow := i * colsx2
+		x1Row := i * x1Cols
+		for k := 0; k < colsx1; k++ {
+			x1Val := x1Data[x1Row+k]
+			x2Row := k * x2Cols
+			for j := 0; j < colsx2; j++ {
+				resData[resRow+j] += x1Val * x2Data[x2Row+j]
 			}
-			Set(res, i, j, sum)
 		}
 	}
+
 	return res, nil
 }
 
-func MatMulParallel(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
-	if x1 == nil || x2 == nil {
-		return nil, errors.New("матрицы пустые")
-	}
-	rows, colsx2, colsx1 := x1.Rows, x2.Cols, x1.Cols
-	if x1.Cols != x2.Rows {
-		return nil, errors.New("матрицы несовместные")
-	}
+func matMulBlocked(x1, x2 *tensor.Matrix, rows, colsx2, colsx1 int) (*tensor.Matrix, error) {
 	res := &tensor.Matrix{
 		Data: make([]float64, rows*colsx2),
 		Rows: rows,
 		Cols: colsx2,
 	}
-	var wg sync.WaitGroup
-	for i := 0; i < rows; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := 0; j < colsx2; j++ {
-				sum := 0.0
-				for k := 0; k < colsx1; k++ {
-					sum += At(x1, i, k) * At(x2, k, j)
+
+	x1Data := x1.Data
+	x2Data := x2.Data
+	resData := res.Data
+	x1Cols := x1.Cols
+	x2Cols := x2.Cols
+
+	for ii := 0; ii < rows; ii += blockSize {
+		iEnd := min(ii+blockSize, rows)
+		for jj := 0; jj < colsx2; jj += blockSize {
+			jEnd := min(jj+blockSize, colsx2)
+			for kk := 0; kk < colsx1; kk += blockSize {
+				kEnd := min(kk+blockSize, colsx1)
+
+				for i := ii; i < iEnd; i++ {
+					resRow := i * colsx2
+					x1Row := i * x1Cols
+					for k := kk; k < kEnd; k++ {
+						x1Val := x1Data[x1Row+k]
+						x2Row := k * x2Cols
+						for j := jj; j < jEnd; j++ {
+							resData[resRow+j] += x1Val * x2Data[x2Row+j]
+						}
+					}
 				}
-				Set(res, i, j, sum)
 			}
-		}(i)
+		}
 	}
+
+	return res, nil
+}
+
+func matMulParallelBlocked(x1, x2 *tensor.Matrix, rows, colsx2, colsx1 int) (*tensor.Matrix, error) {
+	res := &tensor.Matrix{
+		Data: make([]float64, rows*colsx2),
+		Rows: rows,
+		Cols: colsx2,
+	}
+
+	x1Data := x1.Data
+	x2Data := x2.Data
+	resData := res.Data
+	x1Cols := x1.Cols
+	x2Cols := x2.Cols
+
+	numWorkers := runtime.NumCPU()
+	if numWorkers > rows {
+		numWorkers = rows
+	}
+
+	type task struct {
+		startRow, endRow int
+	}
+	tasks := make(chan task, numWorkers*2)
+	var wg sync.WaitGroup
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for t := range tasks {
+				for i := t.startRow; i < t.endRow; i++ {
+					resRow := i * colsx2
+					x1Row := i * x1Cols
+					for jj := 0; jj < colsx2; jj += blockSize {
+						jEnd := min(jj+blockSize, colsx2)
+						for kk := 0; kk < colsx1; kk += blockSize {
+							kEnd := min(kk+blockSize, colsx1)
+							for k := kk; k < kEnd; k++ {
+								x1Val := x1Data[x1Row+k]
+								x2Row := k * x2Cols
+								for j := jj; j < jEnd; j++ {
+									resData[resRow+j] += x1Val * x2Data[x2Row+j]
+								}
+							}
+						}
+					}
+				}
+			}
+		}()
+	}
+
+	rowsPerTask := max(1, rows/numWorkers)
+	for i := 0; i < rows; i += rowsPerTask {
+		endRow := min(i+rowsPerTask, rows)
+		tasks <- task{startRow: i, endRow: endRow}
+	}
+	close(tasks)
+
 	wg.Wait()
 	return res, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func MatMulParallel(x1, x2 *tensor.Matrix) (*tensor.Matrix, error) {
+	return MatMul(x1, x2)
 }
 
 func Transposition(x *tensor.Matrix) (*tensor.Matrix, error) {
@@ -107,15 +222,20 @@ func Transposition(x *tensor.Matrix) (*tensor.Matrix, error) {
 		Rows: rows,
 		Cols: cols,
 	}
+
+	xData := x.Data
+	resData := res.Data
+	xCols := x.Cols
+
 	for i := 0; i < cols; i++ {
+		xRow := i * xCols
 		for j := 0; j < rows; j++ {
-			Set(res, j, i, At(x, i, j))
+			resData[j*cols+i] = xData[xRow+j]
 		}
 	}
 	return res, nil
 }
 
-// Конверторы между Matrix и Tensor
 func MatrixToTensor(m *tensor.Matrix) *tensor.Tensor {
 	return &tensor.Tensor{
 		Data:    m.Data,
