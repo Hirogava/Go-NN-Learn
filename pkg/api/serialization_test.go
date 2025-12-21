@@ -10,33 +10,33 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
 
+// mockModule реализует слои.Модуль для тестов.
+// ВАЖНО: этот тип должен быть объявлен только один раз в пакете api_test.
 type mockModule struct {
 	params []*graph.Node
 }
 
-func (m *mockModule) Layers() []layers.Layer {
-	return nil
-}
+// Layers возвращает дочерние слои модуля (не используемые в этих тестах).
+func (m *mockModule) Layers() []layers.Layer { return nil }
 
-func (m *mockModule) Forward(x *graph.Node) *graph.Node {
-	return x
-}
+// Forward реализует пересылку идентификационных данных.
+func (m *mockModule) Forward(x *graph.Node) *graph.Node { return x }
 
-func (m *mockModule) Params() []*graph.Node {
-	return m.params
-}
+// Params возвращает указатели на узлы параметров.
+func (m *mockModule) Params() []*graph.Node { return m.params }
 
+// newMockParam удобство для тестов.
 func newMockParam(vals []float64, shape []int) *graph.Node {
 	return &graph.Node{
 		Value: &tensor.Tensor{
-			Data:    append([]float64(nil), vals...),
-			Shape:   append([]int(nil), shape...),
-			Strides: nil,
+			Data:  append([]float64(nil), vals...),
+			Shape: append([]int(nil), shape...),
 		},
 	}
 }
 
 func TestSaveLoadCheckpoint_Roundtrip(t *testing.T) {
+	// подготовьте модуль с двумя параметрами
 	p1 := newMockParam([]float64{1.1, 2.2, 3.3, 4.4}, []int{2, 2})
 	p2 := newMockParam([]float64{5.5, 6.6}, []int{2})
 	mod := &mockModule{params: []*graph.Node{p1, p2}}
@@ -44,10 +44,12 @@ func TestSaveLoadCheckpoint_Roundtrip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "ckpt_test.bin")
 
+	// Save
 	if err := api.SaveCheckpoint(mod, path); err != nil {
 		t.Fatalf("SaveCheckpoint failed: %v", err)
 	}
 
+	// Обнулите параметры, чтобы убедиться, что загрузка восстановит их
 	for i := range p1.Value.Data {
 		p1.Value.Data[i] = 0
 	}
@@ -55,6 +57,7 @@ func TestSaveLoadCheckpoint_Roundtrip(t *testing.T) {
 		p2.Value.Data[i] = 0
 	}
 
+	// Load
 	if err := api.LoadCheckpoint(mod, path); err != nil {
 		t.Fatalf("LoadCheckpoint failed: %v", err)
 	}
@@ -73,36 +76,7 @@ func TestSaveLoadCheckpoint_Roundtrip(t *testing.T) {
 	}
 }
 
-func BenchmarkSaveLoadCheckpoint(b *testing.B) {
-	const size = 1024
-	data1 := make([]float64, size)
-	data2 := make([]float64, size/2)
-	for i := range data1 {
-		data1[i] = float64(i) * 0.001
-	}
-	for i := range data2 {
-		data2[i] = float64(i) * 0.002
-	}
-
-	p1 := newMockParam(data1, []int{size})
-	p2 := newMockParam(data2, []int{len(data2)})
-	mod := &mockModule{params: []*graph.Node{p1, p2}}
-
-	path := filepath.Join(b.TempDir(), "bench_ckpt.bin")
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if err := api.SaveCheckpoint(mod, path); err != nil {
-			b.Fatalf("SaveCheckpoint failed: %v", err)
-		}
-		for j := range p1.Value.Data {
-			p1.Value.Data[j] = 0
-		}
-		for j := range p2.Value.Data {
-			p2.Value.Data[j] = 0
-		}
-		if err := api.LoadCheckpoint(mod, path); err != nil {
-			b.Fatalf("LoadCheckpoint failed: %v", err)
-		}
-	}
+// проверка во время компиляции: mockModule реализует слои.Модуль
+func TestMockModuleImplementsLayersModule(t *testing.T) {
+	var _ layers.Module = (*mockModule)(nil)
 }

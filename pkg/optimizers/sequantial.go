@@ -5,25 +5,25 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
-// Sequential — простой контейнер, который применяет набор слоёв последовательно:
-// output = L_n( ... L_2(L_1(input)) ... )
+// Sequential — простая последовательная модель: out = L_n(...L_1(x)...).
+// Используется как удобная обёртка для быстрого прототипирования.
 type Sequential struct {
 	layers []layers.Layer
 }
 
-// NewSequential создаёт новый Sequential, копируя переданный срез слоёв.
+// NewSequential создаёт новый Sequential экземпляр, копируя срез слоёв.
 func NewSequential(ls ...layers.Layer) *Sequential {
 	copied := make([]layers.Layer, len(ls))
 	copy(copied, ls)
 	return &Sequential{layers: copied}
 }
 
-// Layers возвращает список слоёв в Sequential (без копирования).
+// Layers возвращает список слоёв в модели (не копирует).
 func (s *Sequential) Layers() []layers.Layer {
 	return s.layers
 }
 
-// Forward выполняет прямой проход входного узла x по всем слоям последовательно.
+// Forward прогоняет вход по слоям последовательно и возвращает результат.
 func (s *Sequential) Forward(x *graph.Node) *graph.Node {
 	out := x
 	for _, l := range s.layers {
@@ -32,8 +32,8 @@ func (s *Sequential) Forward(x *graph.Node) *graph.Node {
 	return out
 }
 
-// Params собирает и возвращает все параметры от всех вложенных слоёв,
-// в порядке обхода слоёв (удобно для оптимизаторов и сериализации).
+// Params собирает параметры всех вложенных слоёв (в порядке слоёв)
+// и возвращает их в виде среза []*graph.Node.
 func (s *Sequential) Params() []*graph.Node {
 	var params []*graph.Node
 	for _, l := range s.layers {

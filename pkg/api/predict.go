@@ -8,10 +8,9 @@ import (
 )
 
 // Predict выполняет прямой проход (forward) модели m по входному узлу x
-// и возвращает выходной узел графа. Если m или x == nil, возвращается nil.
-//
-// Predict НЕ управляет режимом train/eval — если у вас есть слои вроде
-// Dropout/BatchNorm, контролируйте режим вручную до вызова Predict.
+// и возвращает выходной *graph.Node. Если m или x == nil — возвращает nil.
+// Predict НЕ меняет режимы train/eval; если требуется eval-mode для Dropout/BN,
+// переключите режим вручную до вызова.
 func Predict(m layers.Module, x *graph.Node) *graph.Node {
 	if m == nil || x == nil {
 		return nil
@@ -19,8 +18,9 @@ func Predict(m layers.Module, x *graph.Node) *graph.Node {
 	return m.Forward(x)
 }
 
-// Eval — оценивает модель m на наборах inputs/targets с использованием метрики metric
-// metric должна принимать (pred, target) и возвращать float64 (например, MSE, Accuracy)
+// Eval вычисляет среднюю метрику на парах inputs/targets с использованием
+// метрики metric(pred, target) -> float64. Возвращает среднюю по всем парам.
+// Проверки: model != nil, metric != nil, len(inputs) == len(targets) > 0.
 func Eval(m layers.Module, inputs []*graph.Node, targets []*graph.Node, metric func(*graph.Node, *graph.Node) float64) (float64, error) {
 	if m == nil {
 		return 0, fmt.Errorf("Eval: model is nil")

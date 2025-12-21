@@ -19,18 +19,18 @@ func almostEqual(a, b float64) bool {
 }
 
 func TestAccuracyFromLabels(t *testing.T) {
-	v, err := AccuracyFromLabels([]int{1, 2, 3}, []int{1, 0, 3})
+	v, err := AccuracyFromLabels([]float64{1, 2, 3}, []float64{1, 0, 3})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !almostEqual(v, 2.0/3.0) {
 		t.Fatalf("expected 2/3, got %v", v)
 	}
-	_, err = AccuracyFromLabels([]int{1, 2}, []int{1})
+	_, err = AccuracyFromLabels([]float64{1, 2}, []float64{1})
 	if err == nil {
 		t.Fatalf("expected error on length mismatch")
 	}
-	v, err = AccuracyFromLabels([]int{}, []int{})
+	v, err = AccuracyFromLabels([]float64{}, []float64{})
 	if err != nil {
 		t.Fatalf("unexpected error for empty slices: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestMAEFromSlices(t *testing.T) {
 }
 
 func TestBinaryPrecisionRecallF1(t *testing.T) {
-	p, r, f, err := BinaryPrecisionRecallF1([]int{1, 1, 0, 1}, []int{1, 0, 0, 1}, 1)
+	p, r, f, err := BinaryPrecisionRecallF1([]float64{1, 1, 0, 1}, []float64{1, 0, 0, 1}, 1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
