@@ -86,6 +86,19 @@ func (t *Trainer) Train() {
 		lr := t.lrScheduler.Step()
 		t.opt.SetLearningRate(lr)
 		t.callbacks.OnEpochEnd(&t.context)
+
+		// Проверка флага досрочной остановки обучения (Early Stopping).
+		// После завершения каждой эпохи колбэки (например, EarlyStopping) могут
+		// установить ctx.StopTraining = true, если метрика не улучшается.
+		// Эта проверка необходима для корректной работы механизма ранней остановки:
+		// без неё обучение продолжится даже после того, как колбэк решит остановить его,
+		// что приведёт к переобучению и потере времени на бесполезные вычисления.
+		// Early Stopping предотвращает переобучение, останавливая обучение когда
+		// качество на валидационных данных перестаёт улучшаться.
+		if t.context.StopTraining {
+			fmt.Printf("Training stopped early at epoch %d (best metric achieved earlier)\n", epoch+1)
+			break
+		}
 	}
 	t.callbacks.OnTrainEnd(&t.context)
 }
