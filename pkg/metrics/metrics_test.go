@@ -74,15 +74,15 @@ func TestAccuracyConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	G := 50
 	M := 1000
-	K := 700 // correct per batch
+	K := 700
 	wg.Add(G)
 	for g := 0; g < G; g++ {
 		go func() {
 			defer wg.Done()
-			preds := make([]int, M)
-			labels := make([]int, M)
+			preds := make([]float64, M)
+			labels := make([]float64, M)
 			for i := 0; i < M; i++ {
-				labels[i] = i
+				labels[i] = float64(i)
 				if i < K {
 					preds[i] = labels[i]
 				} else {
@@ -180,16 +180,18 @@ func TestConfusionMatrixConcurrency(t *testing.T) {
 	for g := 0; g < G; g++ {
 		go func(gid int) {
 			defer wg.Done()
-			preds := make([]int, M)
-			labels := make([]int, M)
+			preds := make([]float64, M)
+			labels := make([]float64, M)
 			localCounts := map[int]map[int]int64{}
 			for i := 0; i < M; i++ {
-				labels[i] = i % 3
-				preds[i] = (labels[i] + (gid % 3)) % 3
-				if _, ok := localCounts[labels[i]]; !ok {
-					localCounts[labels[i]] = map[int]int64{}
+				labels[i] = float64(i % 3)
+				preds[i] = float64((int(labels[i]) + (gid % 3)) % 3)
+				labelInt := int(labels[i])
+				predInt := int(preds[i])
+				if _, ok := localCounts[labelInt]; !ok {
+					localCounts[labelInt] = map[int]int64{}
 				}
-				localCounts[labels[i]][preds[i]]++
+				localCounts[labelInt][predInt]++
 			}
 			if err := cm.Update(preds, labels); err != nil {
 				t.Errorf("update error: %v", err)
@@ -240,7 +242,7 @@ func TestConfusionMatrixConcurrency(t *testing.T) {
 
 func TestResetBehavior(t *testing.T) {
 	acc := NewAccuracy()
-	_ = acc.Update([]int{1, 2}, []int{1, 0})
+	_ = acc.Update([]float64{1, 2}, []float64{1, 0})
 	if acc.Value() == 0 {
 		t.Fatalf("expected non-zero before reset")
 	}
@@ -249,7 +251,7 @@ func TestResetBehavior(t *testing.T) {
 		t.Fatalf("expected zero after reset")
 	}
 	cm := NewConfusionMatrix()
-	_ = cm.Update([]int{1}, []int{1})
+	_ = cm.Update([]float64{1}, []float64{1})
 	pp, _, _, _, _, _ := cm.PerClassMetrics()
 	if len(pp) == 0 {
 		t.Fatalf("expected entries before reset")
@@ -263,10 +265,10 @@ func TestResetBehavior(t *testing.T) {
 
 func BenchmarkAccuracyUpdate(b *testing.B) {
 	acc := NewAccuracy()
-	preds := make([]int, 128)
-	labels := make([]int, 128)
+	preds := make([]float64, 128)
+	labels := make([]float64, 128)
 	for i := range preds {
-		labels[i] = i
+		labels[i] = float64(i)
 		if i%2 == 0 {
 			preds[i] = labels[i]
 		} else {
@@ -295,11 +297,11 @@ func BenchmarkMAEUpdate(b *testing.B) {
 
 func BenchmarkConfusionMatrixUpdate(b *testing.B) {
 	cm := NewConfusionMatrix()
-	preds := make([]int, 512)
-	labels := make([]int, 512)
+	preds := make([]float64, 512)
+	labels := make([]float64, 512)
 	for i := range preds {
-		labels[i] = i % 10
-		preds[i] = (labels[i] + 1) % 10
+		labels[i] = float64(i % 10)
+		preds[i] = float64((int(labels[i]) + 1) % 10)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
