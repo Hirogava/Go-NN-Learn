@@ -20,9 +20,20 @@ type checkpointMeta struct {
 	Params  []paramMeta `json:"params"`
 }
 
-// SaveCheckpoint сохраняет все параметры из модуля m в один путь к файлу.
-// Формат: [uint32 metaLen][metaJSON][двоичный float64...]
-// Meta содержит версию и формы (для каждого параметра в порядке m.Params()).
+// SaveCheckpoint сохраняет все параметры из модуля m в файл path.
+// Формат файла:
+//   [uint32 metaLen][metaJSON][binary float64...]
+//
+// metaJSON — JSON с версией формата: { "version": 1, "params": [{"shape":[r,c]}, ...] }
+// Параметры записываются в том же порядке, что возвращает m.Params().
+// Для надёжности функция сначала записывает всё во временный файл в той же
+// директории, затем делает закрытие и os.Rename(tmp, path) — это даёт атомарную
+// замену файла (в пределах файловой системы).
+//
+// Возвращаемые ошибки:
+// - если какой-то параметр nil,
+// - если возникла ошибка при записи файла,
+// - если метаданные не помещаются.
 func SaveCheckpoint(m layers.Module, path string) error {
 	params := m.Params()
 	meta := checkpointMeta{Version: 1, Params: make([]paramMeta, len(params))}
@@ -76,8 +87,14 @@ func SaveCheckpoint(m layers.Module, path string) error {
 	return os.Rename(tmp, path)
 }
 
-// LoadCheckpoint загружает параметры из файла и записывает их в модуль m
-// Для этого требуется, чтобы len(meta.Params) == len(m.Params()) и shapes совпадали.
+// LoadCheckpoint загружает параметрическую часть из файла path и записывает в
+// параметры модуля m. Требования:
+// - число параметров в файле должно совпадать с len(m.Params()),
+// - формы (shape) соответствующих параметров должны совпасть.
+//
+// Функция читает сначала длину JSON-метаданных (uint32 little-endian),
+// затем JSON, затем бинарную последовательность float64 (little-endian) и
+// копирует прочитанные значения в p.Value.Data.
 func LoadCheckpoint(m layers.Module, path string) error {
 	f, err := os.Open(path)
 	if err != nil {
