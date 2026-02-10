@@ -7,7 +7,7 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Мок-модель для тестирования

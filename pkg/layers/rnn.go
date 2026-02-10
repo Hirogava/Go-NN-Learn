@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // RNN представляет базовый рекуррентный слой для обработки последовательных данных.

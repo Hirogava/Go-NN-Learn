@@ -7,7 +7,7 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Тест для старой функции BatchNormVector

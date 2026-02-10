@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Conv2D представляет сверточный слой для обработки 2D пространственных данных.

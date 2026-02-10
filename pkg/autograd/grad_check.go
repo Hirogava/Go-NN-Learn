@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // CheckGradientEngine проверяет градиенты для готовых структур Engine/Node.

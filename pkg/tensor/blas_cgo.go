@@ -1,4 +1,5 @@
-// +build cgo
+//go:build cgo && !windows
+// +build cgo,!windows
 
 package tensor
 
@@ -64,18 +65,18 @@ func MatMulBLAS(a, b *Tensor) (*Tensor, error) {
 	// );
 
 	C.cblas_dgemm(
-		C.CblasRowMajor,                          // Row-major порядок (как в Go)
-		C.CblasNoTrans,                           // A не транспонирована
-		C.CblasNoTrans,                           // B не транспонирована
-		C.int(m),                                 // M
-		C.int(p),                                 // N
-		C.int(n),                                 // K
-		C.double(1.0),                            // alpha = 1.0
+		C.CblasRowMajor,                         // Row-major порядок (как в Go)
+		C.CblasNoTrans,                          // A не транспонирована
+		C.CblasNoTrans,                          // B не транспонирована
+		C.int(m),                                // M
+		C.int(p),                                // N
+		C.int(n),                                // K
+		C.double(1.0),                           // alpha = 1.0
 		(*C.double)(unsafe.Pointer(&a.Data[0])), // A
-		C.int(n),                                 // lda
+		C.int(n),                                // lda
 		(*C.double)(unsafe.Pointer(&b.Data[0])), // B
-		C.int(p),                                 // ldb
-		C.double(0.0),                            // beta = 0.0
+		C.int(p),                                // ldb
+		C.double(0.0),                           // beta = 0.0
 		(*C.double)(unsafe.Pointer(&result.Data[0])), // C
 		C.int(p), // ldc
 	)

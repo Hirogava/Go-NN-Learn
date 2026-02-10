@@ -3,7 +3,7 @@ package autograd
 import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Add
