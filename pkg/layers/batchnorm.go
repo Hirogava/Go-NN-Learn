@@ -4,8 +4,8 @@ import (
 	"math"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // BatchNormVector нормализует входящий батч (вектор), путем изменения общего среднего и дисперсии.
@@ -40,15 +40,16 @@ func BatchNormVector(batch tensor.Vector, gamma float64, beta float64) []float64
 // Нормализует активации по мини-батчу для стабилизации обучения.
 //
 // Формулы:
-//   Forward (training):
-//     μ = mean(x)                     // среднее по батчу
-//     σ² = var(x)                     // дисперсия по батчу
-//     x̂ = (x - μ) / sqrt(σ² + ε)     // нормализация
-//     y = γ * x̂ + β                  // масштабирование и сдвиг
 //
-//   Forward (inference):
-//     x̂ = (x - running_mean) / sqrt(running_var + ε)
-//     y = γ * x̂ + β
+//	Forward (training):
+//	  μ = mean(x)                     // среднее по батчу
+//	  σ² = var(x)                     // дисперсия по батчу
+//	  x̂ = (x - μ) / sqrt(σ² + ε)     // нормализация
+//	  y = γ * x̂ + β                  // масштабирование и сдвиг
+//
+//	Forward (inference):
+//	  x̂ = (x - running_mean) / sqrt(running_var + ε)
+//	  y = γ * x̂ + β
 //
 // Параметры:
 //   - numFeatures: количество признаков (размерность входа)
@@ -229,14 +230,17 @@ func (bn *BatchNorm) Params() []*graph.Node {
 }
 
 // Train переводит слой в режим обучения.
-func (bn *BatchNorm) Train() {
-	bn.training = true
-}
+// func (bn *BatchNorm) Train() {
+// 	bn.training = true
+// }
 
 // Eval переводит слой в режим inference (оценки).
-func (bn *BatchNorm) Eval() {
-	bn.training = false
-}
+// func (bn *BatchNorm) Eval() {
+// 	bn.training = false
+// }
+
+func (bn *BatchNorm) Train() { bn.training = true }
+func (bn *BatchNorm) Eval()  { bn.training = false }
 
 // SetMomentum устанавливает коэффициент momentum для обновления running mean/var.
 func (bn *BatchNorm) SetMomentum(momentum float64) {

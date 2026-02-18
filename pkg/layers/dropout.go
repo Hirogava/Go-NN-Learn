@@ -3,8 +3,8 @@ package layers
 import (
 	"math/rand"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // cлой для регуляризации нейронной сети
@@ -114,3 +114,6 @@ func (op *dropoutOp) Backward(grad *tensor.Tensor) {
 	result, _ := tensor.Add(op.x.Grad, gradInput)
 	op.x.Grad = result
 }
+
+func (d *Dropout) Train() { d.training = true }
+func (d *Dropout) Eval()  { d.training = false }
