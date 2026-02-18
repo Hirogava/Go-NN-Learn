@@ -41,3 +41,19 @@ func (s *Sequential) Params() []*graph.Node {
 	}
 	return params
 }
+
+func (s Sequential) Train() {
+	for _, l := range s.layers {
+		if te, ok := l.(layers.TrainEval); ok {
+			te.Train()
+		}
+	}
+}
+
+func (s Sequential) Eval() {
+	for _, l := range s.layers {
+		if te, ok := l.(layers.TrainEval); ok {
+			te.Eval()
+		}
+	}
+}

@@ -16,3 +16,8 @@ type Module interface {
 	Forward(x *graph.Node) *graph.Node
 	Params() []*graph.Node
 }
+
+type TrainEval interface {
+	Train()
+	Eval()
+}
