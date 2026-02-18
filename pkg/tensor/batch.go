@@ -2,7 +2,6 @@ package tensor
 
 import (
 	"fmt"
-	"sync"
 )
 
 // BatchOps содержит пакетные операции для обработки множества тензоров
@@ -35,45 +34,28 @@ func BatchMatMul(a, b *Tensor) (*Tensor, error) {
 	}
 
 	// Параллельная обработка батча
-	var wg sync.WaitGroup
-	numWorkers := min(batchSize, 8) // Ограничиваем количество воркеров
+	ParallelFor(batchSize, 1, func(start, end int) {
+		for batchIdx := start; batchIdx < end; batchIdx++ {
+			// Извлекаем срезы для текущего батча
+			aOffset := batchIdx * m * n
+			bOffset := batchIdx * n * p
+			cOffset := batchIdx * m * p
 
-	batchPerWorker := (batchSize + numWorkers - 1) / numWorkers
+			aSlice := a.Data[aOffset : aOffset+m*n]
+			bSlice := b.Data[bOffset : bOffset+n*p]
+			cSlice := result.Data[cOffset : cOffset+m*p]
 
-	for w := 0; w < numWorkers; w++ {
-		startBatch := w * batchPerWorker
-		if startBatch >= batchSize {
-			break
-		}
-		endBatch := min((w+1)*batchPerWorker, batchSize)
-
-		wg.Add(1)
-		go func(start, end int) {
-			defer wg.Done()
-
-			for batchIdx := start; batchIdx < end; batchIdx++ {
-				// Извлекаем срезы для текущего батча
-				aOffset := batchIdx * m * n
-				bOffset := batchIdx * n * p
-				cOffset := batchIdx * m * p
-
-				aSlice := a.Data[aOffset : aOffset+m*n]
-				bSlice := b.Data[bOffset : bOffset+n*p]
-				cSlice := result.Data[cOffset : cOffset+m*p]
-
-				// Выполняем умножение матриц для этого элемента батча
-				if m >= ParallelThreshold || p >= ParallelThreshold {
-					matmulBlocked(aSlice, bSlice, cSlice, m, n, p)
-				} else if m >= BlockSize || p >= BlockSize {
-					matmulBlocked(aSlice, bSlice, cSlice, m, n, p)
-				} else {
-					matmulOptimized(aSlice, bSlice, cSlice, m, n, p)
-				}
+			// Выполняем умножение матриц для этого элемента батча
+			if m >= ParallelThreshold || p >= ParallelThreshold {
+				matmulBlocked(aSlice, bSlice, cSlice, m, n, p)
+			} else if m >= BlockSize || p >= BlockSize {
+				matmulBlocked(aSlice, bSlice, cSlice, m, n, p)
+			} else {
+				matmulOptimized(aSlice, bSlice, cSlice, m, n, p)
 			}
-		}(startBatch, endBatch)
-	}
+		}
+	})
 
-	wg.Wait()
 	return result, nil
 }
 
@@ -100,31 +82,16 @@ func BatchAdd(tensors []*Tensor) (*Tensor, error) {
 	}
 
 	// Параллельное сложение
-	numWorkers := 4
-	chunkSize := (size + numWorkers - 1) / numWorkers
-
-	var wg sync.WaitGroup
-	for w := 0; w < numWorkers; w++ {
-		start := w * chunkSize
-		if start >= size {
-			break
-		}
-		end := min((w+1)*chunkSize, size)
-
-		wg.Add(1)
-		go func(s, e int) {
-			defer wg.Done()
-			for i := s; i < e; i++ {
-				sum := 0.0
-				for _, t := range tensors {
-					sum += t.Data[i]
-				}
-				result.Data[i] = sum
+	ParallelFor(size, MinGrainSize, func(start, end int) {
+		for i := start; i < end; i++ {
+			sum := 0.0
+			for _, t := range tensors {
+				sum += t.Data[i]
 			}
-		}(start, end)
-	}
+			result.Data[i] = sum
+		}
+	})
 
-	wg.Wait()
 	return result, nil
 }
 
@@ -134,16 +101,12 @@ func BatchScale(tensors []*Tensor, scales []float64) error {
 		return fmt.Errorf("количество тензоров и коэффициентов должно совпадать: %d != %d", len(tensors), len(scales))
 	}
 
-	var wg sync.WaitGroup
-	for i, t := range tensors {
-		wg.Add(1)
-		go func(tensor *Tensor, scale float64) {
-			defer wg.Done()
-			ScaleInPlace(scale, tensor)
-		}(t, scales[i])
-	}
+	ParallelFor(len(tensors), 1, func(start, end int) {
+		for i := start; i < end; i++ {
+			ScaleInPlace(scales[i], tensors[i])
+		}
+	})
 
-	wg.Wait()
 	return nil
 }
 
@@ -303,38 +266,22 @@ func BatchMatMulSIMD(a, b *Tensor) (*Tensor, error) {
 	}
 
 	// Параллельная обработка с SIMD
-	var wg sync.WaitGroup
-	numWorkers := min(batchSize, 8)
-	batchPerWorker := (batchSize + numWorkers - 1) / numWorkers
+	ParallelFor(batchSize, 1, func(start, end int) {
+		for batchIdx := start; batchIdx < end; batchIdx++ {
+			aOffset := batchIdx * m * n
+			bOffset := batchIdx * n * p
+			cOffset := batchIdx * m * p
 
-	for w := 0; w < numWorkers; w++ {
-		startBatch := w * batchPerWorker
-		if startBatch >= batchSize {
-			break
+			aSlice := a.Data[aOffset : aOffset+m*n]
+			bSlice := b.Data[bOffset : bOffset+n*p]
+			cSlice := result.Data[cOffset : cOffset+m*p]
+
+			// Используем SIMD-оптимизированное умножение
+			blockSize := chooseBlockSize(m, n, p)
+			matmulBlockedSIMD(aSlice, bSlice, cSlice, m, n, p, blockSize)
 		}
-		endBatch := min((w+1)*batchPerWorker, batchSize)
+	})
 
-		wg.Add(1)
-		go func(start, end int) {
-			defer wg.Done()
-
-			for batchIdx := start; batchIdx < end; batchIdx++ {
-				aOffset := batchIdx * m * n
-				bOffset := batchIdx * n * p
-				cOffset := batchIdx * m * p
-
-				aSlice := a.Data[aOffset : aOffset+m*n]
-				bSlice := b.Data[bOffset : bOffset+n*p]
-				cSlice := result.Data[cOffset : cOffset+m*p]
-
-				// Используем SIMD-оптимизированное умножение
-				blockSize := chooseBlockSize(m, n, p)
-				matmulBlockedSIMD(aSlice, bSlice, cSlice, m, n, p, blockSize)
-			}
-		}(startBatch, endBatch)
-	}
-
-	wg.Wait()
 	return result, nil
 }
 
