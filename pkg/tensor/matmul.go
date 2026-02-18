@@ -2,8 +2,6 @@ package tensor
 
 import (
 	"fmt"
-	"runtime"
-	"sync"
 )
 
 // Размер блока для блочного умножения матриц (оптимален для кеша L1)
@@ -22,54 +20,51 @@ const (
 )
 
 // MatMul выполняет умножение матриц (тензоров 2D).
-// Для матриц A[m,n] и B[n,p] возвращает C[m,p], где C = A * B
-// Использует оптимизированный алгоритм с блочным умножением для лучшей локальности кеша.
-// Автоматически выбирает наилучшую реализацию (BLAS, SIMD, блочное умножение).
 func MatMul(a, b *Tensor) (*Tensor, error) {
-	// Проверка размерностей
 	if len(a.Shape) != 2 || len(b.Shape) != 2 {
 		return nil, fmt.Errorf("умножение матриц требует 2D тензоры, получены %dD и %dD", len(a.Shape), len(b.Shape))
 	}
+	if a.DType != b.DType {
+		return nil, fmt.Errorf("типы данных тензоров не совпадают: %v != %v", a.DType, b.DType)
+	}
 
-	m := a.Shape[0] // строки A
-	n := a.Shape[1] // столбцы A = строки B
-	p := b.Shape[1] // столбцы B
-
+	m := a.Shape[0]
+	n := a.Shape[1]
+	p := b.Shape[1]
 	if n != b.Shape[0] {
 		return nil, fmt.Errorf("несовместимые формы для умножения матриц: [%d,%d] и [%d,%d]", m, n, b.Shape[0], p)
 	}
 
-	// Для очень больших матриц используем BLAS (если доступен)
+	if a.DType == Float32 {
+		result := &Tensor{
+			Data32:  make([]float32, m*p),
+			Shape:   []int{m, p},
+			Strides: []int{p, 1},
+			DType:   Float32,
+		}
+		if m >= 32 || n >= 32 || p >= 32 {
+			matmulV2Float32(a.Data32, b.Data32, result.Data32, m, n, p)
+		} else {
+			matmulOptimizedFloat32(a.Data32, b.Data32, result.Data32, m, n, p)
+		}
+		return result, nil
+	}
+
 	if BLASAvailable && (m >= BLASThreshold || p >= BLASThreshold || n >= BLASThreshold) {
 		return MatMulBLAS(a, b)
 	}
 
-	// Создаем результирующий тензор
 	result := &Tensor{
 		Data:    make([]float64, m*p),
 		Shape:   []int{m, p},
 		Strides: []int{p, 1},
+		DType:   Float64,
 	}
-
-	// Адаптивный выбор алгоритма на основе размера матриц
-	matrixSize := m * n * p
-
-	if m >= ParallelThreshold || p >= ParallelThreshold {
-		// Параллельное блочное умножение для больших матриц
-		blockSize := chooseBlockSize(m, n, p)
-		matmulParallelBlockedAdaptive(a.Data, b.Data, result.Data, m, n, p, blockSize)
-	} else if m >= BlockSizeSmall || p >= BlockSizeSmall {
-		// Блочное умножение с SIMD для средних матриц
-		blockSize := chooseBlockSize(m, n, p)
-		matmulBlockedSIMD(a.Data, b.Data, result.Data, m, n, p, blockSize)
-	} else if matrixSize < 1000 {
-		// Простое оптимизированное умножение для очень малых матриц
-		matmulOptimized(a.Data, b.Data, result.Data, m, n, p)
+	if m >= 32 || n >= 32 || p >= 32 {
+		matmulV2(a.Data, b.Data, result.Data, m, n, p)
 	} else {
-		// Блочное умножение для средних матриц
-		matmulBlocked(a.Data, b.Data, result.Data, m, n, p)
+		matmulOptimized(a.Data, b.Data, result.Data, m, n, p)
 	}
-
 	return result, nil
 }
 
@@ -98,30 +93,48 @@ func chooseBlockSize(m, n, p int) int {
 }
 
 // matmulOptimized - оптимизированное умножение для малых матриц
-// Использует переупорядочивание циклов ikj для лучшей локальности кеша
 func matmulOptimized(a, b, c []float64, m, n, p int) {
-	// Обнуляем результат
 	for i := range c {
 		c[i] = 0.0
 	}
-
-	// Цикл ikj - лучшая локальность кеша для row-major матриц
 	for i := 0; i < m; i++ {
 		iOffset := i * n
 		cOffset := i * p
 		for k := 0; k < n; k++ {
 			aik := a[iOffset+k]
 			bOffset := k * p
-			// Векторизация внутреннего цикла
 			j := 0
-			// Развертка x4 для векторизации
 			for ; j <= p-MicroKernelSize; j += MicroKernelSize {
 				c[cOffset+j] += aik * b[bOffset+j]
 				c[cOffset+j+1] += aik * b[bOffset+j+1]
 				c[cOffset+j+2] += aik * b[bOffset+j+2]
 				c[cOffset+j+3] += aik * b[bOffset+j+3]
 			}
-			// Остаток
+			for ; j < p; j++ {
+				c[cOffset+j] += aik * b[bOffset+j]
+			}
+		}
+	}
+}
+
+func matmulOptimizedFloat32(a, b, c []float32, m, n, p int) {
+	for i := range c {
+		c[i] = 0
+	}
+	const mk = 4
+	for i := 0; i < m; i++ {
+		iOffset := i * n
+		cOffset := i * p
+		for k := 0; k < n; k++ {
+			aik := a[iOffset+k]
+			bOffset := k * p
+			j := 0
+			for ; j <= p-mk; j += mk {
+				c[cOffset+j] += aik * b[bOffset+j]
+				c[cOffset+j+1] += aik * b[bOffset+j+1]
+				c[cOffset+j+2] += aik * b[bOffset+j+2]
+				c[cOffset+j+3] += aik * b[bOffset+j+3]
+			}
 			for ; j < p; j++ {
 				c[cOffset+j] += aik * b[bOffset+j]
 			}
@@ -178,44 +191,17 @@ func matmulMicroKernel(a, b, c []float64, iStart, iEnd, kStart, kEnd, jStart, jE
 }
 
 // matmulParallelBlocked - параллельное блочное умножение матриц
-// Использует worker pool для параллелизма на уровне строк
+// Использует ParallelFor для параллелизма на уровне строк.
 func matmulParallelBlocked(a, b, c []float64, m, n, p int) {
 	// Инициализируем результат нулями
 	for i := range c {
 		c[i] = 0.0
 	}
 
-	// Определяем количество воркеров (по числу ядер)
-	numWorkers := runtime.NumCPU()
-	if numWorkers > m {
-		numWorkers = m
-	}
-
-	// Разбиваем работу на блоки строк
-	blockRows := (m + numWorkers - 1) / numWorkers
-	if blockRows < BlockSize {
-		blockRows = BlockSize
-	}
-
-	var wg sync.WaitGroup
-
-	// Запускаем воркеры
-	for w := 0; w < numWorkers; w++ {
-		startRow := w * blockRows
-		if startRow >= m {
-			break
-		}
-		endRow := min((w+1)*blockRows, m)
-
-		wg.Add(1)
-		go func(start, end int) {
-			defer wg.Done()
-			// Блочное умножение для диапазона строк
-			matmulBlockedRange(a, b, c, start, end, n, p)
-		}(startRow, endRow)
-	}
-
-	wg.Wait()
+	// Параллелизуем по строкам через centralized scheduler
+	ParallelFor(m, BlockSize, func(startRow, endRow int) {
+		matmulBlockedRange(a, b, c, startRow, endRow, n, p)
+	})
 }
 
 // matmulBlockedRange - блочное умножение для диапазона строк
@@ -234,29 +220,46 @@ func matmulBlockedRange(a, b, c []float64, rowStart, rowEnd, n, p int) {
 	}
 }
 
-// MatMulTransposeB - умножение A * B^T (оптимизированная версия)
-// Полезно для градиентов в обратном распространении
-// Использует dot product для лучшей производительности
 func MatMulTransposeB(a, b *Tensor) (*Tensor, error) {
 	if len(a.Shape) != 2 || len(b.Shape) != 2 {
 		return nil, fmt.Errorf("умножение матриц требует 2D тензоры")
 	}
-
+	if a.DType != b.DType {
+		return nil, fmt.Errorf("типы данных не совпадают: %v != %v", a.DType, b.DType)
+	}
 	m := a.Shape[0]
 	n := a.Shape[1]
-	p := b.Shape[0] // B транспонирована, поэтому берем строки B
-
+	p := b.Shape[0]
 	if n != b.Shape[1] {
 		return nil, fmt.Errorf("несовместимые формы для умножения матриц с транспонированием")
 	}
-
+	if a.DType == Float32 {
+		result := &Tensor{
+			Data32:  make([]float32, m*p),
+			Shape:   []int{m, p},
+			Strides: []int{p, 1},
+			DType:   Float32,
+		}
+		for i := 0; i < m; i++ {
+			iOffsetA := i * n
+			iOffsetC := i * p
+			for j := 0; j < p; j++ {
+				jOffsetB := j * n
+				var sum float32
+				for k := 0; k < n; k++ {
+					sum += a.Data32[iOffsetA+k] * b.Data32[jOffsetB+k]
+				}
+				result.Data32[iOffsetC+j] = sum
+			}
+		}
+		return result, nil
+	}
 	result := &Tensor{
 		Data:    make([]float64, m*p),
 		Shape:   []int{m, p},
 		Strides: []int{p, 1},
+		DType:   Float64,
 	}
-
-	// Оптимизированное умножение A * B^T через dot product
 	for i := 0; i < m; i++ {
 		iOffsetA := i * n
 		iOffsetC := i * p
@@ -264,7 +267,6 @@ func MatMulTransposeB(a, b *Tensor) (*Tensor, error) {
 			jOffsetB := j * n
 			sum := 0.0
 			k := 0
-			// Развертка для векторизации
 			for ; k <= n-MicroKernelSize; k += MicroKernelSize {
 				sum += a.Data[iOffsetA+k] * b.Data[jOffsetB+k]
 				sum += a.Data[iOffsetA+k+1] * b.Data[jOffsetB+k+1]
@@ -277,37 +279,48 @@ func MatMulTransposeB(a, b *Tensor) (*Tensor, error) {
 			result.Data[iOffsetC+j] = sum
 		}
 	}
-
 	return result, nil
 }
 
-// MatMulTransposeA - умножение A^T * B (оптимизированная версия)
 func MatMulTransposeA(a, b *Tensor) (*Tensor, error) {
 	if len(a.Shape) != 2 || len(b.Shape) != 2 {
 		return nil, fmt.Errorf("умножение матриц требует 2D тензоры")
 	}
-
-	m := a.Shape[1] // A транспонирована
+	if a.DType != b.DType {
+		return nil, fmt.Errorf("типы данных не совпадают: %v != %v", a.DType, b.DType)
+	}
+	m := a.Shape[1]
 	n := a.Shape[0]
 	p := b.Shape[1]
-
 	if n != b.Shape[0] {
 		return nil, fmt.Errorf("несовместимые формы для умножения матриц с транспонированием")
 	}
-
+	if a.DType == Float32 {
+		result := &Tensor{
+			Data32:  make([]float32, m*p),
+			Shape:   []int{m, p},
+			Strides: []int{p, 1},
+			DType:   Float32,
+		}
+		for k := 0; k < n; k++ {
+			kOffsetA := k * m
+			kOffsetB := k * p
+			for i := 0; i < m; i++ {
+				aki := a.Data32[kOffsetA+i]
+				iOffsetC := i * p
+				for j := 0; j < p; j++ {
+					result.Data32[iOffsetC+j] += aki * b.Data32[kOffsetB+j]
+				}
+			}
+		}
+		return result, nil
+	}
 	result := &Tensor{
 		Data:    make([]float64, m*p),
 		Shape:   []int{m, p},
 		Strides: []int{p, 1},
+		DType:   Float64,
 	}
-
-	// Обнуляем результат
-	for i := range result.Data {
-		result.Data[i] = 0.0
-	}
-
-	// Оптимизированное умножение A^T * B
-	// Используем порядок циклов для лучшей локальности
 	for k := 0; k < n; k++ {
 		kOffsetA := k * m
 		kOffsetB := k * p
@@ -315,7 +328,6 @@ func MatMulTransposeA(a, b *Tensor) (*Tensor, error) {
 			aki := a.Data[kOffsetA+i]
 			iOffsetC := i * p
 			j := 0
-			// Векторизация
 			for ; j <= p-MicroKernelSize; j += MicroKernelSize {
 				result.Data[iOffsetC+j] += aki * b.Data[kOffsetB+j]
 				result.Data[iOffsetC+j+1] += aki * b.Data[kOffsetB+j+1]
@@ -327,7 +339,6 @@ func MatMulTransposeA(a, b *Tensor) (*Tensor, error) {
 			}
 		}
 	}
-
 	return result, nil
 }
 
@@ -362,42 +373,17 @@ func matmulBlockedSIMD(a, b, c []float64, m, n, p int, blockSize int) {
 }
 
 // matmulParallelBlockedAdaptive - параллельное блочное умножение с адаптивным размером блока
+// Использует ParallelFor для распределения работы.
 func matmulParallelBlockedAdaptive(a, b, c []float64, m, n, p int, blockSize int) {
 	// Инициализируем результат нулями
 	for i := range c {
 		c[i] = 0.0
 	}
 
-	// Определяем количество воркеров
-	numWorkers := runtime.NumCPU()
-	if numWorkers > m {
-		numWorkers = m
-	}
-
-	// Разбиваем работу на блоки строк
-	blockRows := (m + numWorkers - 1) / numWorkers
-	if blockRows < blockSize {
-		blockRows = blockSize
-	}
-
-	var wg sync.WaitGroup
-
-	// Запускаем воркеры
-	for w := 0; w < numWorkers; w++ {
-		startRow := w * blockRows
-		if startRow >= m {
-			break
-		}
-		endRow := min((w+1)*blockRows, m)
-
-		wg.Add(1)
-		go func(start, end int) {
-			defer wg.Done()
-			matmulBlockedRangeAdaptive(a, b, c, start, end, n, p, blockSize)
-		}(startRow, endRow)
-	}
-
-	wg.Wait()
+	// Параллелизуем по строкам через centralized scheduler
+	ParallelFor(m, blockSize, func(startRow, endRow int) {
+		matmulBlockedRangeAdaptive(a, b, c, startRow, endRow, n, p, blockSize)
+	})
 }
 
 // matmulBlockedRangeAdaptive - блочное умножение для диапазона строк с адаптивным размером блока
