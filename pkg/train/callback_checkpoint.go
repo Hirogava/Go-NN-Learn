@@ -34,25 +34,27 @@ type ModelCheckpoint struct {
 // NewModelCheckpoint создает новый колбэк для сохранения чекпоинтов.
 //
 // Параметры:
-//   filepath - путь для сохранения, может содержать "{epoch}" для подстановки номера эпохи
-//              Пример: "checkpoints/model_epoch_{epoch}.ckpt" -> "checkpoints/model_epoch_005.ckpt"
-//   monitor - метрика для мониторинга ("loss", "val_loss", "accuracy" и т.д.)
-//   mode - "min" для минимизации метрики (loss), "max" для максимизации (accuracy)
-//   saveFreq - частота сохранения в эпохах (1 = каждую эпоху, 5 = каждую 5-ю эпоху)
-//              0 = сохранять только при улучшении метрики
-//   saveBest - true: заменять файл только если метрика улучшилась
-//              false: сохранять всегда (при достижении saveFreq)
-//   verbose - true: выводить сообщения о сохранении
+//
+//	filepath - путь для сохранения, может содержать "{epoch}" для подстановки номера эпохи
+//	           Пример: "checkpoints/model_epoch_{epoch}.ckpt" -> "checkpoints/model_epoch_005.ckpt"
+//	monitor - метрика для мониторинга ("loss", "val_loss", "accuracy" и т.д.)
+//	mode - "min" для минимизации метрики (loss), "max" для максимизации (accuracy)
+//	saveFreq - частота сохранения в эпохах (1 = каждую эпоху, 5 = каждую 5-ю эпоху)
+//	           0 = сохранять только при улучшении метрики
+//	saveBest - true: заменять файл только если метрика улучшилась
+//	           false: сохранять всегда (при достижении saveFreq)
+//	verbose - true: выводить сообщения о сохранении
 //
 // Примеры:
-//   // Сохранять каждую эпоху с номером в имени
-//   NewModelCheckpoint("models/model_{epoch}.ckpt", "loss", "min", 1, false, true)
 //
-//   // Сохранять только лучшую модель (заменяя файл)
-//   NewModelCheckpoint("models/best_model.ckpt", "loss", "min", 0, true, true)
+//	// Сохранять каждую эпоху с номером в имени
+//	NewModelCheckpoint("models/model_{epoch}.ckpt", "loss", "min", 1, false, true)
 //
-//   // Сохранять каждые 5 эпох
-//   NewModelCheckpoint("models/model_{epoch}.ckpt", "loss", "min", 5, false, true)
+//	// Сохранять только лучшую модель (заменяя файл)
+//	NewModelCheckpoint("models/best_model.ckpt", "loss", "min", 0, true, true)
+//
+//	// Сохранять каждые 5 эпох
+//	NewModelCheckpoint("models/model_{epoch}.ckpt", "loss", "min", 5, false, true)
 func NewModelCheckpoint(filepath, monitor, mode string, saveFreq int, saveBest, verbose bool) *ModelCheckpoint {
 	initialValue := 0.0
 	if mode == "min" {

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
 )
 
 // Тесты корректности
@@ -257,7 +257,7 @@ func TestMatMulAlgorithmsConsistency(t *testing.T) {
 	sizes := []struct {
 		rows1, cols1, rows2, cols2 int
 	}{
-		{32, 32, 32, 32},   // Маленькая - matMulSimple
+		{32, 32, 32, 32},     // Маленькая - matMulSimple
 		{100, 100, 100, 100}, // Средняя - matMulBlocked
 		{200, 300, 300, 200}, // Большая - matMulParallelBlocked
 	}
@@ -285,7 +285,7 @@ func TestMatMulAlgorithmsConsistency(t *testing.T) {
 		// Выполняем умножение
 		result, err := MatMul(x1, x2)
 		if err != nil {
-			t.Fatalf("MatMul() error для размера %dx%d * %dx%d: %v", 
+			t.Fatalf("MatMul() error для размера %dx%d * %dx%d: %v",
 				size.rows1, size.cols1, size.rows2, size.cols2, err)
 		}
 
@@ -309,4 +309,3 @@ func TestMatMulAlgorithmsConsistency(t *testing.T) {
 		}
 	}
 }
-

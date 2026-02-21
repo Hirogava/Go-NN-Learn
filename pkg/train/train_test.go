@@ -3,12 +3,12 @@ package train
 import (
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
+	"github.com/Hirogava/Go-NN-Learn/internal/autograd"
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
+	"github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/dataloader"
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/metrics"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // простой фейковый слой, возвращает заданные параметры

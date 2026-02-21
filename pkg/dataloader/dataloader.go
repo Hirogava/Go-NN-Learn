@@ -3,7 +3,7 @@ package dataloader
 import (
 	"math/rand"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
 )
 
 // Batch представляет один мини-батч данных.
@@ -16,23 +16,23 @@ type Batch struct {
 // DataLoader — итератор для загрузки данных мини-батчами.
 // Отвечает за батчинг, перемешивание и итерацию по Dataset.
 type DataLoader struct {
-	dataset    Dataset  // Источник данных
-	batchSize  int      // Размер мини-батча
-	shuffle    bool     // Перемешивать ли данные перед каждой эпохой
-	dropLast   bool     // Отбрасывать ли последний неполный батч
-	rng        *rand.Rand // Генератор случайных чисел для shuffle
+	dataset   Dataset    // Источник данных
+	batchSize int        // Размер мини-батча
+	shuffle   bool       // Перемешивать ли данные перед каждой эпохой
+	dropLast  bool       // Отбрасывать ли последний неполный батч
+	rng       *rand.Rand // Генератор случайных чисел для shuffle
 
 	// Внутреннее состояние итератора
-	indices    []int    // Порядок индексов для текущей эпохи
-	currentIdx int      // Текущая позиция в indices
+	indices    []int // Порядок индексов для текущей эпохи
+	currentIdx int   // Текущая позиция в indices
 }
 
 // DataLoaderConfig — конфигурация для создания DataLoader.
 type DataLoaderConfig struct {
-	BatchSize int       // Размер батча (обязательный)
-	Shuffle   bool      // Перемешивать данные (по умолчанию false)
-	DropLast  bool      // Отбрасывать последний неполный батч (по умолчанию false)
-	Seed      int64     // Seed для генератора случайных чисел (по умолчанию 0)
+	BatchSize int   // Размер батча (обязательный)
+	Shuffle   bool  // Перемешивать данные (по умолчанию false)
+	DropLast  bool  // Отбрасывать последний неполный батч (по умолчанию false)
+	Seed      int64 // Seed для генератора случайных чисел (по умолчанию 0)
 }
 
 // NewDataLoader создает новый DataLoader с заданной конфигурацией.
@@ -42,12 +42,13 @@ type DataLoaderConfig struct {
 //   - config: конфигурация DataLoader
 //
 // Пример:
-//   loader := NewDataLoader(dataset, DataLoaderConfig{
-//       BatchSize: 32,
-//       Shuffle:   true,
-//       DropLast:  false,
-//       Seed:      42,
-//   })
+//
+//	loader := NewDataLoader(dataset, DataLoaderConfig{
+//	    BatchSize: 32,
+//	    Shuffle:   true,
+//	    DropLast:  false,
+//	    Seed:      42,
+//	})
 func NewDataLoader(dataset Dataset, config DataLoaderConfig) *DataLoader {
 	if config.BatchSize <= 0 {
 		panic("batch size must be positive")

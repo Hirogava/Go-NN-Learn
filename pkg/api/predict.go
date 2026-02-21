@@ -3,8 +3,8 @@ package api
 import (
 	"fmt"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/layers"
 )
 
 // Predict выполняет прямой проход (forward) модели m по входному узлу x

@@ -5,8 +5,8 @@ import (
 	"math"
 	"sync"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/layers"
 )
 
 // TrainingContext содержит информацию о текущем состоянии обучения.

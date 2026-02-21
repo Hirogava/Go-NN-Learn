@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
+	"github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/api"
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // mockModule реализует слои.Модуль для тестов.

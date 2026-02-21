@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+	"github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+	layers "github.com/Hirogava/Go-NN-Learn/internal/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/train"
 )
 
@@ -95,11 +95,11 @@ func Example_modelCheckpoint() {
 	// Создаем колбэк для сохранения лучшей модели
 	checkpoint := train.NewModelCheckpoint(
 		"models/best_model.ckpt", // Путь к файлу
-		"val_loss",                // Какую метрику отслеживать
-		"min",                     // Минимизировать метрику
-		0,                         // Не сохранять по частоте (только лучшую)
-		true,                      // Сохранять только лучшую
-		true,                      // Выводить сообщения
+		"val_loss",               // Какую метрику отслеживать
+		"min",                    // Минимизировать метрику
+		0,                        // Не сохранять по частоте (только лучшую)
+		true,                     // Сохранять только лучшую
+		true,                     // Выводить сообщения
 	)
 
 	ctx := train.NewTrainingContext(model, 5)
@@ -124,10 +124,10 @@ func Example_metricsLogger() {
 
 	// Создаем логгер в формате CSV
 	logger := train.NewMetricsLogger(
-		"logs/train.csv",      // Путь к файлу
-		train.LogFormatCSV,    // Формат CSV
-		true,                     // Выводить в консоль
-		1,                        // Логировать каждую эпоху
+		"logs/train.csv",   // Путь к файлу
+		train.LogFormatCSV, // Формат CSV
+		true,               // Выводить в консоль
+		1,                  // Логировать каждую эпоху
 	)
 
 	ctx := train.NewTrainingContext(model, 3)

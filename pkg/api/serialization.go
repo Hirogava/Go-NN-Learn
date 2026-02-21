@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
+	"github.com/Hirogava/Go-NN-Learn/internal/layers"
 )
 
 type paramMeta struct {
@@ -22,7 +22,8 @@ type checkpointMeta struct {
 
 // SaveCheckpoint сохраняет все параметры из модуля m в файл path.
 // Формат файла:
-//   [uint32 metaLen][metaJSON][binary float64...]
+//
+//	[uint32 metaLen][metaJSON][binary float64...]
 //
 // metaJSON — JSON с версией формата: { "version": 1, "params": [{"shape":[r,c]}, ...] }
 // Параметры записываются в том же порядке, что возвращает m.Params().

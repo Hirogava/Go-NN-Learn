@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
 )
 
 const (

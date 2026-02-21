@@ -3,15 +3,15 @@ package dataloader_test
 import (
 	"fmt"
 
+	tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
 	"github.com/Hirogava/Go-NN-Learn/pkg/dataloader"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // ExampleSimpleDataset демонстрирует базовое использование SimpleDataset.
 func ExampleSimpleDataset() {
 	// Создаем синтетические данные
-	features := tensor.Randn([]int{100, 10}, 42)  // 100 примеров, 10 признаков
-	targets := tensor.Randn([]int{100, 1}, 123)   // 100 примеров, 1 выходное значение
+	features := tensor.Randn([]int{100, 10}, 42) // 100 примеров, 10 признаков
+	targets := tensor.Randn([]int{100, 1}, 123)  // 100 примеров, 1 выходное значение
 
 	// Создаем датасет
 	dataset := dataloader.NewSimpleDataset(features, targets)
@@ -32,8 +32,8 @@ func ExampleSimpleDataset() {
 // ExampleDataLoader демонстрирует базовое использование DataLoader.
 func ExampleDataLoader() {
 	// Создаем датасет
-	features := tensor.Randn([]int{100, 784}, 42)  // 100 MNIST-подобных примеров
-	targets := tensor.Randn([]int{100, 10}, 123)   // 100 примеров, 10 классов
+	features := tensor.Randn([]int{100, 784}, 42) // 100 MNIST-подобных примеров
+	targets := tensor.Randn([]int{100, 10}, 123)  // 100 примеров, 10 классов
 
 	dataset := dataloader.NewSimpleDataset(features, targets)
 
@@ -75,7 +75,7 @@ func ExampleDataLoader_shuffle() {
 	// DataLoader с перемешиванием
 	loader := dataloader.NewDataLoader(dataset, dataloader.DataLoaderConfig{
 		BatchSize: 10,
-		Shuffle:   true,  // Включаем перемешивание
+		Shuffle:   true, // Включаем перемешивание
 		DropLast:  false,
 		Seed:      777,
 	})
@@ -120,7 +120,7 @@ func ExampleDataLoader_dropLast() {
 	loader := dataloader.NewDataLoader(dataset, dataloader.DataLoaderConfig{
 		BatchSize: 10,
 		Shuffle:   false,
-		DropLast:  true,  // Отбрасываем неполный батч
+		DropLast:  true, // Отбрасываем неполный батч
 		Seed:      42,
 	})
 

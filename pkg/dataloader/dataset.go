@@ -1,6 +1,6 @@
 package dataloader
 
-import "github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+import tensor "github.com/Hirogava/Go-NN-Learn/internal/backend"
 
 // Dataset представляет абстрактную коллекцию данных.
 // Предоставляет интерфейс для доступа к отдельным примерам по индексу.
@@ -16,9 +16,9 @@ type Dataset interface {
 // SimpleDataset — простая in-memory реализация Dataset.
 // Хранит все данные в памяти в виде тензоров.
 type SimpleDataset struct {
-	features *tensor.Tensor // Входные данные: [num_samples, ...]
-	targets  *tensor.Tensor // Целевые значения: [num_samples, ...]
-	numSamples int          // Количество примеров
+	features   *tensor.Tensor // Входные данные: [num_samples, ...]
+	targets    *tensor.Tensor // Целевые значения: [num_samples, ...]
+	numSamples int            // Количество примеров
 }
 
 // NewSimpleDataset создает новый SimpleDataset из тензоров features и targets.

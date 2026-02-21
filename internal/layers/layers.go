@@ -1,0 +1,23 @@
+package layers
+
+import "github.com/Hirogava/Go-NN-Learn/internal/backend/graph"
+
+// Layer — базовый интерфейс слоя
+// Forward: принимает узел графа и возвращает узел
+// Params: возвращает срез узлов-параметров
+type Layer interface {
+	Forward(x *graph.Node) *graph.Node
+	Params() []*graph.Node
+}
+
+// Module — модуль, состоящий из слоёв
+type Module interface {
+	Layers() []Layer
+	Forward(x *graph.Node) *graph.Node
+	Params() []*graph.Node
+}
+
+type TrainEval interface {
+	Train()
+	Eval()
+}

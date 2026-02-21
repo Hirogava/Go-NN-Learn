@@ -4,13 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
-	"github.com/Hirogava/Go-NN-Learn/pkg/dataloader"
-	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/metrics"
-	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/gnn"
 )
 
 func main() {
@@ -34,8 +28,8 @@ func main() {
 		centers[c] = center
 	}
 
-	x := tensor.Zeros(samples, inputDim)
-	y := tensor.Zeros(samples, numClasses)
+	x := gnn.Zeros(samples, inputDim)
+	y := gnn.Zeros(samples, numClasses)
 
 	for i := 0; i < samples; i++ {
 		label := rand.Intn(numClasses)
@@ -45,27 +39,27 @@ func main() {
 		y.Data[i*y.Strides[0]+label] = 1.0
 	}
 
-	ds := dataloader.NewSimpleDataset(x, y)
-	loader := dataloader.NewDataLoader(ds, dataloader.DataLoaderConfig{
+	ds := gnn.NewSimpleDataset(x, y)
+	loader := gnn.NewDataLoader(ds, gnn.DataLoaderConfig{
 		BatchSize: batchSize,
 		Shuffle:   true,
 		Seed:      42,
 	})
 
 	// Модель - один Dense
-	model := layers.NewDense(inputDim, numClasses, func(w []float64) {
+	model := gnn.NewDense(inputDim, numClasses, func(w []float64) {
 		for i := range w {
 			w[i] = rand.NormFloat64() * 0.01
 		}
 	})
 
-	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
+	optimizer := gnn.NewAdam(0.01, 0.9, 0.999, 1e-8)
 
 	// Training loop (epochs)
 	for epoch := 0; epoch < epochs; epoch++ {
 		loader.Reset()
-		engine := autograd.NewEngine()
-		acc := metrics.NewAccuracy()
+		engine := gnn.NewEngine()
+		acc := gnn.NewAccuracy()
 
 		var epochLoss float64
 		var seen int
@@ -73,7 +67,7 @@ func main() {
 		for loader.HasNext() {
 			batch := loader.Next()
 
-			xNode := graph.NewNode(batch.Features, nil, nil)
+			xNode := gnn.NewNode(batch.Features, nil, nil)
 
 			// Forward
 			logits := model.Forward(xNode)
@@ -109,7 +103,7 @@ func main() {
 
 // Helpers (только для example)
 
-func logitsToLabels(t *tensor.Tensor) []float64 {
+func logitsToLabels(t *gnn.Tensor) []float64 {
 	rows, cols := t.Shape[0], t.Shape[1]
 	out := make([]float64, rows)
 
@@ -128,7 +122,7 @@ func logitsToLabels(t *tensor.Tensor) []float64 {
 	return out
 }
 
-func oneHotToLabels(t *tensor.Tensor) []float64 {
+func oneHotToLabels(t *gnn.Tensor) []float64 {
 	rows, cols := t.Shape[0], t.Shape[1]
 	out := make([]float64, rows)
 
