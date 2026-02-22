@@ -1,13 +1,22 @@
 package layers
 
+type Trainable interface {
+	Train()
+	Eval()
+}
+
 func SetEvalMode(module Module) {
 	for _, layer := range module.Layers() {
-		if bn, ok := layer.(*BatchNorm); ok {
-			bn.Eval()
+		if t, ok := layer.(Trainable); ok {
+			t.Eval()
 		}
+	}
+}
 
-		if do, ok := layer.(*Dropout); ok {
-			do.training = false // или do.Eval(), если добавишь метод
+func SetTrainMode(module Module) {
+	for _, layer := range module.Layers() {
+		if t, ok := layer.(Trainable); ok {
+			t.Train()
 		}
 	}
 }
