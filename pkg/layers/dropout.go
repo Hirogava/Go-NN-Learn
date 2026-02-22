@@ -3,6 +3,7 @@ package layers
 import (
 	"math/rand"
 
+	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
@@ -73,13 +74,12 @@ func (d *Dropout) Forward(x *graph.Node) *graph.Node {
 			Strides: append([]int{}, xTensor.Strides...),
 		},
 	}
-
-	// Устанавливаем операцию для backward pass
-	output.Operation = &dropoutOp{
-		x:    x,
-		mask: d.mask,
+	if autograd.GradEnabled() {
+		output.Operation = &dropoutOp{
+			x:    x,
+			mask: d.mask,
+		}
 	}
-
 	return output
 }
 
