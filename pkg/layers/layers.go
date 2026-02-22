@@ -20,3 +20,8 @@ type Module interface {
 	Train()
 	Eval()
 }
+
+type TrainEval interface {
+	Train()
+	Eval()
+}
