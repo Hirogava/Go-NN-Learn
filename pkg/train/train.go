@@ -16,7 +16,7 @@ import (
 // Содержит всю необходимую информацию для работы TrainLoop
 type Trainer struct {
 	model       layers.Module
-	dataLoader  dataloader.DataLoader
+	dataLoader  *dataloader.DataLoader
 	opt         optimizers.Optimizer
 	lossFn      autograd.LossOp
 	lrScheduler optimizers.LearningRateScheduler
@@ -30,7 +30,7 @@ type Trainer struct {
 // NewTrainer создает новый экземпляр Trainer
 func NewTrainer(
 	model layers.Module,
-	dataLoader dataloader.DataLoader,
+	dataLoader *dataloader.DataLoader,
 	opt optimizers.Optimizer,
 	lossFn autograd.LossOp,
 	lrScheduler optimizers.LearningRateScheduler,

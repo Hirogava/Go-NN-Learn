@@ -31,7 +31,7 @@ func SetGlobalSeed(seed int64) {
 func NewTrainerFromConfig(
 	cfg *TrainerConfig,
 	model layers.Module,
-	dataLoader dataloader.DataLoader,
+	dataLoader *dataloader.DataLoader,
 	opt optimizers.Optimizer,
 	lossFn autograd.LossOp,
 	lrScheduler optimizers.LearningRateScheduler,

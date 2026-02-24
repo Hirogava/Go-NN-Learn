@@ -13,6 +13,8 @@ type identityLayer struct{}
 
 func (l *identityLayer) Forward(x *graph.Node) *graph.Node { return x }
 func (l *identityLayer) Params() []*graph.Node             { return nil }
+func (l *identityLayer) Train()                            {}
+func (l *identityLayer) Eval()                             {}
 
 type simpleModule struct {
 	layers []layers.Layer
@@ -37,6 +39,8 @@ func (s *simpleModule) Params() []*graph.Node {
 	}
 	return ps
 }
+func (s *simpleModule) Train() {}
+func (s *simpleModule) Eval()  {}
 
 func buildIdentityModule() layers.Module {
 	return &simpleModule{layers: []layers.Layer{&identityLayer{}}}

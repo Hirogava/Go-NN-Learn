@@ -24,6 +24,8 @@ func (m *mockModule) Forward(x *graph.Node) *graph.Node { return x }
 
 // Params возвращает указатели на узлы параметров.
 func (m *mockModule) Params() []*graph.Node { return m.params }
+func (m *mockModule) Train()                {}
+func (m *mockModule) Eval()                 {}
 
 // newMockParam удобство для тестов.
 func newMockParam(vals []float64, shape []int) *graph.Node {

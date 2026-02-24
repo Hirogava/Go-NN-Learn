@@ -32,6 +32,8 @@ func (m *SimpleModel) Params() []*graph.Node {
 func (m *SimpleModel) Layers() []layers.Layer {
 	return []layers.Layer{m.layer}
 }
+func (m *SimpleModel) Train() {}
+func (m *SimpleModel) Eval()  {}
 
 // Example_basicTrainingLoop демонстрирует базовый цикл обучения с колбэками
 func Example_basicTrainingLoop() {

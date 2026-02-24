@@ -10,7 +10,6 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // простой фейковый слой, возвращает заданные параметры
@@ -18,9 +17,10 @@ type fakeLayer struct {
 	params []*graph.Node
 }
 
-func (f *fakeLayer) Params() []*graph.Node { return f.params }
-
-func (f *fakeLayer) Forward(x *graph.Node) *graph.Node { return x }
+func (f *fakeLayer) Params() []*graph.Node                { return f.params }
+func (f *fakeLayer) Forward(x *graph.Node) *graph.Node    { return x }
+func (f *fakeLayer) Train()                               {}
+func (f *fakeLayer) Eval()                                {}
 
 // простой фейковый модель, хранит последний предикт как узел
 type fakeModel struct {
@@ -28,8 +28,16 @@ type fakeModel struct {
 }
 
 func (m *fakeModel) Forward(n *graph.Node) *graph.Node {
-	// всегда возвращаем предсказание 2.0 (чтобы совпадало с таргетом в тесте)
-	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}}, nil, nil)
+	shape := append([]int(nil), n.Value.Shape...)
+	size := 1
+	for _, d := range shape {
+		size *= d
+	}
+	data := make([]float64, size)
+	for i := range data {
+		data[i] = 2.0
+	}
+	m.lastPred = graph.NewNode(&tensor.Tensor{Data: data, Shape: shape}, nil, nil)
 	return m.lastPred
 }
 
@@ -46,6 +54,8 @@ func (m *fakeModel) Params() []*graph.Node {
 	}
 	return []*graph.Node{m.lastPred}
 }
+func (m *fakeModel) Train() {}
+func (m *fakeModel) Eval()  {}
 
 // фейковый оптимизатор для проверки вызова Step
 type fakeOpt struct {

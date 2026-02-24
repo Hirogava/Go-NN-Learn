@@ -6,7 +6,6 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 type addLayer struct {

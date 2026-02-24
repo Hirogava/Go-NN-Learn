@@ -99,6 +99,9 @@ func (d *Dense) Forward(x *graph.Node) *graph.Node {
 	return out
 }
 
+func (d *Dense) Train() {}
+func (d *Dense) Eval()  {}
+
 func (d *Dense) Params() []*graph.Node {
 	return []*graph.Node{d.weights, d.bias}
 }
