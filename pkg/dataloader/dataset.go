@@ -1,6 +1,6 @@
 package dataloader
 
-import "github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+import "github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 
 // Dataset представляет абстрактную коллекцию данных.
 // Предоставляет интерфейс для доступа к отдельным примерам по индексу.

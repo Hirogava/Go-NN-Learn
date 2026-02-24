@@ -345,3 +345,22 @@ func Exp(a *Tensor) *Tensor {
 func Log(a *Tensor) *Tensor {
 	return Apply(a, math.Log)
 }
+
+// Max возвращает одноэлементный тензор с максимальным значением.
+func Max(a *Tensor) *Tensor {
+	if len(a.Data) == 0 {
+		panic("cannot compute Max of empty tensor")
+	}
+	maxVal := a.Data[0]
+	for _, v := range a.Data {
+		if v > maxVal {
+			maxVal = v
+		}
+	}
+	return &Tensor{
+		Data:    []float64{maxVal},
+		Shape:   []int{1},
+		Strides: []int{1},
+		DType:   Float64,
+	}
+}

@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Тесты корректности

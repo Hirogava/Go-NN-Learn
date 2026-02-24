@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 func initFuncFixed(data []float64) {
@@ -65,8 +65,7 @@ func TestDenseBackward(t *testing.T) {
 		Strides: []int{2, 1},
 	}
 
-	op := output.Operation.(*denseOp)
-	op.Backward(grad)
+	output.Operation.Backward(grad)
 
 	fmt.Println(input.Grad.Data)
 	fmt.Println(dense.weights.Grad.Data)

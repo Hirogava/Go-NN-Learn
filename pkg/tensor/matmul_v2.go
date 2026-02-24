@@ -310,7 +310,7 @@ func packA(a []float64, packed []float64, n, rowStart, rowEnd, colStart, colEnd 
 //	K=0: B[0, c*nr] ... B[0, c*nr+nr-1]
 //	K=1: B[1, c*nr] ... B[1, c*nr+nr-1]
 //	...
-func packB(b []float64, packed []float64, n, p, rowStart, rowEnd, colStart, colEnd int) {
+func packB(b []float64, packed []float64, _, p, rowStart, rowEnd, colStart, colEnd int) {
 	rows := rowEnd - rowStart // kcCur
 	cols := colEnd - colStart
 
@@ -539,7 +539,7 @@ func packA32(a []float32, packed []float32, n, rowStart, rowEnd, colStart, colEn
 	}
 }
 
-func packB32(b []float32, packed []float32, n, p, rowStart, rowEnd, colStart, colEnd int) {
+func packB32(b []float32, packed []float32, _, p, rowStart, rowEnd, colStart, colEnd int) {
 	rows := rowEnd - rowStart
 	cols := colEnd - colStart
 	idx := 0

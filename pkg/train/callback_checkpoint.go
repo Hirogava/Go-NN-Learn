@@ -89,13 +89,14 @@ func (mc *ModelCheckpoint) OnEpochEnd(ctx *TrainingContext) error {
 	improved := false
 
 	// Проверяем улучшение
-	if mc.mode == "min" {
+	switch mc.mode {
+	case "min":
 		if currentValue < mc.bestValue {
 			mc.bestValue = currentValue
 			mc.bestEpoch = ctx.Epoch
 			improved = true
 		}
-	} else if mc.mode == "max" {
+	case "max":
 		if currentValue > mc.bestValue {
 			mc.bestValue = currentValue
 			mc.bestEpoch = ctx.Epoch

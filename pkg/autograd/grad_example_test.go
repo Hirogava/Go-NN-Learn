@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // TestExampleDotSumGradient строит примитивный граф y = sum(a * b) и проверяет его градиента.

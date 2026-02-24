@@ -3,9 +3,16 @@ package layers
 import (
 	"math/rand"
 
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
 )
+
+type backwardOp struct {
+	backwardFn func(*tensor.Tensor)
+}
+
+func (b *backwardOp) Forward(inputs ...*graph.Node) *graph.Node { return nil }
+func (b *backwardOp) Backward(grad *tensor.Tensor)              { b.backwardFn(grad) }
 
 // cлой для регуляризации нейронной сети
 type Dropout struct {
@@ -75,10 +82,8 @@ func (d *Dropout) Forward(x *graph.Node) *graph.Node {
 	}
 
 	// Устанавливаем операцию для backward pass
-	output.Operation = &dropoutOp{
-		x:    x,
-		mask: d.mask,
-	}
+	op := &dropoutOp{x: x, mask: d.mask}
+	output.Operation = &backwardOp{op.Backward}
 
 	return output
 }

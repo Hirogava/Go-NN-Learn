@@ -120,12 +120,13 @@ func (h *MetricsHistory) Best(metricName string, mode string) (int, float64) {
 	bestValue := values[0]
 
 	for i := 1; i < len(values); i++ {
-		if mode == "min" {
+		switch mode {
+		case "min":
 			if values[i] < bestValue {
 				bestValue = values[i]
 				bestEpoch = i
 			}
-		} else if mode == "max" {
+		case "max":
 			if values[i] > bestValue {
 				bestValue = values[i]
 				bestEpoch = i

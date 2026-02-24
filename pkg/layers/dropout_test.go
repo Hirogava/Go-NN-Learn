@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 func TestDropoutForward(t *testing.T) {
@@ -85,8 +85,7 @@ func TestDropoutBackward(t *testing.T) {
 		Strides: []int{2, 1},
 	}
 
-	op := output.Operation.(*dropoutOp)
-	op.Backward(grad)
+	output.Operation.Backward(grad)
 
 	fmt.Println("\nGradient input:", grad.Data)
 	fmt.Println("Mask:", dropout.mask.Data)

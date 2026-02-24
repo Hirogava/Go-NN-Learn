@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/dataloader"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // ExampleSimpleDataset демонстрирует базовое использование SimpleDataset.

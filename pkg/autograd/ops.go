@@ -3,7 +3,7 @@ package autograd
 import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 // Add
@@ -25,7 +25,7 @@ func (e *Engine) Add(a, b *graph.Node) *graph.Node {
 		return nil
 	}
 	op := &Add{Parents: []*graph.Node{a, b}}
-	n := graph.NewNode(val, []*graph.Node{a, b}, op)
+	n := graph.NewNode(val, []*graph.Node{a, b}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -61,7 +61,7 @@ func (e *Engine) Mul(a, b *graph.Node) *graph.Node {
 		return nil
 	}
 	op := &MulOperation{Parents: []*graph.Node{a, b}, A: a.Value, B: b.Value}
-	n := graph.NewNode(val, []*graph.Node{a, b}, op)
+	n := graph.NewNode(val, []*graph.Node{a, b}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -125,7 +125,7 @@ func (e *Engine) MatMul(a, b *graph.Node) *graph.Node {
 	}
 	val := matrix.MatrixToTensor(valM)
 	op := &MatMul{Parents: []*graph.Node{a, b}, A: a.Value, B: b.Value}
-	n := graph.NewNode(val, []*graph.Node{a, b}, op)
+	n := graph.NewNode(val, []*graph.Node{a, b}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -138,7 +138,7 @@ func (e *Engine) Transpose(a *graph.Node) *graph.Node {
 	}
 	val := matrix.MatrixToTensor(valM)
 	op := &Transpose{Parents: []*graph.Node{a}}
-	n := graph.NewNode(val, []*graph.Node{a}, op)
+	n := graph.NewNode(val, []*graph.Node{a}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -178,7 +178,7 @@ func (e *Engine) Sum(a *graph.Node) *graph.Node {
 	val := tensor.Sum(a.Value) // скаляр [1]
 	inShape := append([]int{}, a.Value.Shape...)
 	op := &Sum{Parents: []*graph.Node{a}, InputShape: inShape}
-	n := graph.NewNode(val, []*graph.Node{a}, op)
+	n := graph.NewNode(val, []*graph.Node{a}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -202,7 +202,7 @@ func (op *Exp) Backward(grad *tensor.Tensor) {
 func (e *Engine) Exp(a *graph.Node) *graph.Node {
 	val := tensor.Exp(a.Value)
 	op := &Exp{Parents: []*graph.Node{a}, Out: val}
-	n := graph.NewNode(val, []*graph.Node{a}, op)
+	n := graph.NewNode(val, []*graph.Node{a}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -234,7 +234,7 @@ func (op *Log) Backward(grad *tensor.Tensor) {
 func (e *Engine) Log(a *graph.Node) *graph.Node {
 	val := tensor.Log(a.Value)
 	op := &Log{Parents: []*graph.Node{a}, In: a.Value, Eps: 1e-12}
-	n := graph.NewNode(val, []*graph.Node{a}, op)
+	n := graph.NewNode(val, []*graph.Node{a}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }
@@ -269,7 +269,7 @@ func (e *Engine) Reshape(a *graph.Node, newShape []int) *graph.Node {
 		InShape:  append([]int{}, a.Value.Shape...),
 		OutShape: append([]int{}, newShape...),
 	}
-	n := graph.NewNode(val, []*graph.Node{a}, op)
+	n := graph.NewNode(val, []*graph.Node{a}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, n)
 	return n
 }

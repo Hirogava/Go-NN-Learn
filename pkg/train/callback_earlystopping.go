@@ -83,13 +83,12 @@ func (es *EarlyStopping) OnEpochEnd(ctx *TrainingContext) error {
 	// Проверяем улучшение с учетом minDelta
 	improved := false
 
-	if es.mode == "min" {
-		// Для минимизации: улучшение если new < best - minDelta
+	switch es.mode {
+	case "min":
 		if currentValue < (es.bestValue - es.minDelta) {
 			improved = true
 		}
-	} else if es.mode == "max" {
-		// Для максимизации: улучшение если new > best + minDelta
+	case "max":
 		if currentValue > (es.bestValue + es.minDelta) {
 			improved = true
 		}

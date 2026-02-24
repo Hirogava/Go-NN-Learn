@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 type LossOp interface {
@@ -81,7 +81,7 @@ func (op *MSELossOp) Backward(grad *tensor.Tensor) {
 func (e *Engine) MSELoss(pred *graph.Node, target *tensor.Tensor) *graph.Node {
 	op := NewMSELossOp(pred, target)
 	result := op.Forward()
-	node := graph.NewNode(result, []*graph.Node{pred}, op)
+	node := graph.NewNode(result, []*graph.Node{pred}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -200,7 +200,7 @@ func (op *CrossEntropyLogitsOp) Backward(grad *tensor.Tensor) {
 func (e *Engine) CrossEntropyLoss(logits *graph.Node, target *tensor.Tensor) *graph.Node {
 	op := NewCrossEntropyLogitsOp(logits, target)
 	result := op.Forward()
-	node := graph.NewNode(result, []*graph.Node{logits}, op)
+	node := graph.NewNode(result, []*graph.Node{logits}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -280,7 +280,7 @@ func (op *HingeLossOp) Backward(grad *tensor.Tensor) {
 func (e *Engine) HingeLoss(pred *graph.Node, target *tensor.Tensor) *graph.Node {
 	op := NewHingeLossOp(pred, target)
 	result := op.Forward()
-	node := graph.NewNode(result, []*graph.Node{pred}, op)
+	node := graph.NewNode(result, []*graph.Node{pred}, &backwardOp{op.Backward})
 	e.Nodes = append(e.Nodes, node)
 	return node
 }

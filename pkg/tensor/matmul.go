@@ -372,31 +372,3 @@ func matmulBlockedSIMD(a, b, c []float64, m, n, p int, blockSize int) {
 	}
 }
 
-// matmulParallelBlockedAdaptive - параллельное блочное умножение с адаптивным размером блока
-// Использует ParallelFor для распределения работы.
-func matmulParallelBlockedAdaptive(a, b, c []float64, m, n, p int, blockSize int) {
-	// Инициализируем результат нулями
-	for i := range c {
-		c[i] = 0.0
-	}
-
-	// Параллелизуем по строкам через centralized scheduler
-	ParallelFor(m, blockSize, func(startRow, endRow int) {
-		matmulBlockedRangeAdaptive(a, b, c, startRow, endRow, n, p, blockSize)
-	})
-}
-
-// matmulBlockedRangeAdaptive - блочное умножение для диапазона строк с адаптивным размером блока
-func matmulBlockedRangeAdaptive(a, b, c []float64, rowStart, rowEnd, n, p int, blockSize int) {
-	for kk := 0; kk < n; kk += blockSize {
-		kEnd := min(kk+blockSize, n)
-		for ii := rowStart; ii < rowEnd; ii += blockSize {
-			iEnd := min(ii+blockSize, rowEnd)
-			for jj := 0; jj < p; jj += blockSize {
-				jEnd := min(jj+blockSize, p)
-				// SIMD микро-ядро
-				MatMulSIMDKernel(a, b, c, 0, n, p, ii, iEnd, kk, kEnd, jj, jEnd)
-			}
-		}
-	}
-}

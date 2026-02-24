@@ -3,7 +3,7 @@ package layers
 import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
 type Dense struct {
@@ -93,11 +93,8 @@ func (d *Dense) Forward(x *graph.Node) *graph.Node {
 		},
 	}
 
-	out.Operation = &denseOp{
-		x: x,
-		w: d.weights,
-		b: d.bias,
-	}
+	dOp := &denseOp{x: x, w: d.weights, b: d.bias}
+	out.Operation = &backwardOp{dOp.Backward}
 
 	return out
 }
