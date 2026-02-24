@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Connect to server",
+      "type": "go",
+      "mode": "remote",
+      "request": "attach",
+      "port": 38697,
+      "host": "127.0.0.1",
+      "showLog": true
+    },
+    {
+      "name": "Launch go tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "env": {
+        "CGO_ENABLED": "0"
+      },
+      "args": [
+        "-test.v"
+      ]
+    }
+  ]
+}

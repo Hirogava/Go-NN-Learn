@@ -1,0 +1,23 @@
+{
+  "go.lintTool": "golangci-lint",
+  "go.lintOnSave": "package",
+  "go.formatTool": "gofmt",
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "go.coverageOptions": "gocoverdir",
+  "go.buildTags": "nocgo",
+  "go.buildFlags": ["-tags=nocgo"],
+  "go.toolsEnvVars": {
+    "CGO_ENABLED": "0"
+  },
+  "go.lintFlags": ["--build-tags=nocgo"],
+  "go.alternateTools": {
+    "golangci-lint": "golangci-lint",
+    "go": "go"
+  }
+}

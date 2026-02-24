@@ -86,6 +86,19 @@ func (t *Trainer) Train() {
 		lr := t.lrScheduler.Step()
 		t.opt.SetLearningRate(lr)
 		t.callbacks.OnEpochEnd(&t.context)
+
+		// Проверка флага досрочной остановки обучения (Early Stopping).
+		// После завершения каждой эпохи колбэки (например, EarlyStopping) могут
+		// установить ctx.StopTraining = true, если метрика не улучшается.
+		// Эта проверка необходима для корректной работы механизма ранней остановки:
+		// без неё обучение продолжится даже после того, как колбэк решит остановить его,
+		// что приведёт к переобучению и потере времени на бесполезные вычисления.
+		// Early Stopping предотвращает переобучение, останавливая обучение когда
+		// качество на валидационных данных перестаёт улучшаться.
+		if t.context.StopTraining {
+			fmt.Printf("Training stopped early at epoch %d (best metric achieved earlier)\n", epoch+1)
+			break
+		}
 	}
 	t.callbacks.OnTrainEnd(&t.context)
 }
@@ -100,11 +113,15 @@ func (t *Trainer) processBatch(batch *dataloader.Batch) error {
 	input := batch.Features
 	labels := batch.Targets
 
+	ctx := autograd.NewGraph()
+	ctx.WithGrad()
+	autograd.SetGraph(ctx)
+
 	n := graph.NewNode(input, nil, nil) // Засовываем в граф
 	pred := t.model.Forward(n)          // Делаем Forward проход
 
 	// Вычисляем потери (loss)
-	lossVal := t.calculateLoss(pred, labels)
+	lossVal := t.calculateLoss(ctx, pred, labels)
 
 	// Рассчет метрик
 	err := t.calculateMetrics(pred, labels)
@@ -121,36 +138,32 @@ func (t *Trainer) processBatch(batch *dataloader.Batch) error {
 	return nil
 }
 
-func (t *Trainer) calculateLoss(pred *graph.Node, target *tensor.Tensor) float64 {
-	var lossNode autograd.LossOp
-	// TODO: проверить все ли функции потерь затронуты.
+func (t *Trainer) calculateLoss(ctx *autograd.GraphContext, pred *graph.Node, target *tensor.Tensor) float64 {
+	engine := ctx.Engine()
+	var lossNode *graph.Node
 	switch t.lossFn.(type) {
 	case *autograd.MSELossOp:
-		lossNode = autograd.NewMSELossOp(pred, target)
+		lossNode = engine.MSELoss(pred, target)
 	case *autograd.HingeLossOp:
-		lossNode = autograd.NewHingeLossOp(pred, target)
+		lossNode = engine.HingeLoss(pred, target)
 	case *autograd.CrossEntropyLogitsOp:
-		lossNode = autograd.NewCrossEntropyLogitsOp(pred, target)
+		lossNode = engine.CrossEntropyLoss(pred, target)
 	}
 	if lossNode == nil {
 		return 0
 	}
-	// Ну хоть убейте, не знаю как обнулить градиенды эффективнее :(
-	// Умные люди перепишите с горутинами :)
 	for _, layer := range t.model.Layers() {
-		node := layer.Params()
-		for _, node := range node {
+		for _, node := range layer.Params() {
 			node.ZeroGrad()
 		}
 	}
 
-	lossTensor := lossNode.Forward()
 	var lossVal float64
-	if lossTensor != nil && len(lossTensor.Data) > 0 {
-		lossVal = lossTensor.Data[0]
+	if lossNode.Value != nil && len(lossNode.Value.Data) > 0 {
+		lossVal = lossNode.Value.Data[0]
 	}
 
-	lossNode.Backward(tensor.Ones(1))
+	ctx.Backward(lossNode)
 	t.context.Batch++
 
 	t.opt.Step(t.model.Params())

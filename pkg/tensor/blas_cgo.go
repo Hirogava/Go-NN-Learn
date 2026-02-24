@@ -1,5 +1,10 @@
+<<<<<<< HEAD:pkg/tensor/blas.go
 //go:build cgo && blas
 // +build cgo,blas
+=======
+//go:build cgo && !windows
+// +build cgo,!windows
+>>>>>>> origin/main:pkg/tensor/blas_cgo.go
 
 package tensor
 

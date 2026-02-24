@@ -1,9 +1,14 @@
 package layers
 
 import (
+	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+<<<<<<< HEAD
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+=======
+>>>>>>> origin/main
 )
 
 type Dense struct {
@@ -92,10 +97,20 @@ func (d *Dense) Forward(x *graph.Node) *graph.Node {
 			Strides: []int{outMat.Cols, 1},
 		},
 	}
+<<<<<<< HEAD
 
 	dOp := &denseOp{x: x, w: d.weights, b: d.bias}
 	out.Operation = &backwardOp{dOp.Backward}
 
+=======
+	if autograd.GradEnabled() {
+		out.Operation = &denseOp{
+			x: x,
+			w: d.weights,
+			b: d.bias,
+		}
+	}
+>>>>>>> origin/main
 	return out
 }
 

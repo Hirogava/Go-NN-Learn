@@ -8,6 +8,8 @@ import "github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 type Layer interface {
 	Forward(x *graph.Node) *graph.Node
 	Params() []*graph.Node
+	Train()
+	Eval()
 }
 
 // Module — модуль, состоящий из слоёв
@@ -15,4 +17,11 @@ type Module interface {
 	Layers() []Layer
 	Forward(x *graph.Node) *graph.Node
 	Params() []*graph.Node
+	Train()
+	Eval()
+}
+
+type TrainEval interface {
+	Train()
+	Eval()
 }

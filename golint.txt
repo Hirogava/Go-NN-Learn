@@ -1,0 +1,724 @@
+pkg\autograd\autograd.go:10:6: exported type Engine should have comment or be unexported
+pkg\autograd\autograd.go:14:1: exported function NewEngine should have comment or be unexported
+pkg\autograd\autograd.go:69:1: comment on exported method Engine.ZeroGrad should be of the form "ZeroGrad ..."
+pkg\autograd\autograd.go:76:6: exported type ReLUOp should have comment or be unexported
+pkg\autograd\autograd.go:80:1: exported function NewReLUOp should have comment or be unexported
+pkg\autograd\autograd.go:84:1: exported method ReLUOp.Forward should have comment or be unexported
+pkg\autograd\autograd.go:94:1: exported method Engine.ReLU should have comment or be unexported
+pkg\autograd\autograd.go:102:1: exported method ReLUOp.Backward should have comment or be unexported
+pkg\autograd\autograd.go:115:6: exported type SigmoidOp should have comment or be unexported
+pkg\autograd\autograd.go:120:1: exported function NewSigmoidOp should have comment or be unexported
+pkg\autograd\autograd.go:124:1: exported method SigmoidOp.Forward should have comment or be unexported
+pkg\autograd\autograd.go:133:1: exported method Engine.Sigmoid should have comment or be unexported
+pkg\autograd\autograd.go:141:1: exported method SigmoidOp.Backward should have comment or be unexported
+pkg\autograd\autograd.go:153:6: exported type TanhOp should have comment or be unexported
+pkg\autograd\autograd.go:158:1: exported function NewTanhOp should have comment or be unexported
+pkg\autograd\autograd.go:162:1: exported method TanhOp.Forward should have comment or be unexported
+pkg\autograd\autograd.go:171:1: exported method Engine.Tanh should have comment or be unexported
+pkg\autograd\autograd.go:179:1: exported method TanhOp.Backward should have comment or be unexported
+pkg\autograd\autograd.go:191:6: exported type SoftmaxCrossEntropyOp should have comment or be unexported
+pkg\autograd\autograd.go:198:1: exported function NewSoftmaxCrossEntropyOp should have comment or be unexported
+pkg\autograd\autograd.go:202:1: exported method SoftmaxCrossEntropyOp.Forward should have comment or be unexported
+pkg\autograd\autograd.go:239:1: exported method Engine.SoftmaxCrossEntropy should have comment or be unexported
+pkg\autograd\autograd.go:247:1: exported method SoftmaxCrossEntropyOp.Backward should have comment or be unexported
+pkg\autograd\losses.go:10:6: exported type LossOp should have comment or be unexported
+pkg\autograd\losses.go:15:1: comment on exported type MSELossOp should be of the form "MSELossOp ..." (with optional leading article)
+pkg\autograd\ops.go:9:1: comment on exported type Add should be of the form "Add ..." (with optional leading article)
+pkg\autograd\ops.go:12:1: exported method Add.Backward should have comment or be unexported
+pkg\autograd\ops.go:22:1: exported method Engine.Add should have comment or be unexported
+pkg\autograd\ops.go:33:1: comment on exported type MulOperation should be of the form "MulOperation ..." (with optional leading article)
+pkg\autograd\ops.go:39:1: exported method MulOperation.Backward should have comment or be unexported
+pkg\autograd\ops.go:45:2: don't use underscores in Go names; var gA_local should be gALocal
+pkg\autograd\ops.go:53:2: don't use underscores in Go names; var gB_local should be gBLocal
+pkg\autograd\ops.go:58:1: exported method Engine.Mul should have comment or be unexported
+pkg\autograd\ops.go:69:6: exported type MatMul should have comment or be unexported
+pkg\autograd\ops.go:75:6: exported type Transpose should have comment or be unexported
+pkg\autograd\ops.go:79:1: exported method MatMul.Backward should have comment or be unexported
+pkg\autograd\ops.go:89:2: don't use underscores in Go names; var gA_local should be gALocal
+pkg\autograd\ops.go:90:2: don't use underscores in Go names; var gA_localT should be gALocalT
+pkg\autograd\ops.go:101:2: don't use underscores in Go names; var gB_local should be gBLocal
+pkg\autograd\ops.go:102:2: don't use underscores in Go names; var gB_localT should be gBLocalT
+pkg\autograd\ops.go:107:1: exported method Transpose.Backward should have comment or be unexported
+pkg\autograd\ops.go:119:1: exported method Engine.MatMul should have comment or be unexported
+pkg\autograd\ops.go:133:1: exported method Engine.Transpose should have comment or be unexported
+pkg\autograd\ops.go:146:6: exported type Sum should have comment or be unexported
+pkg\autograd\ops.go:151:1: exported method Sum.Backward should have comment or be unexported
+pkg\autograd\ops.go:177:1: exported method Engine.Sum should have comment or be unexported
+pkg\autograd\ops.go:186:1: comment on exported type Exp should be of the form "Exp ..." (with optional leading article)
+pkg\autograd\ops.go:192:1: exported method Exp.Backward should have comment or be unexported
+pkg\autograd\ops.go:202:1: exported method Engine.Exp should have comment or be unexported
+pkg\autograd\ops.go:210:1: comment on exported type Log should be of the form "Log ..." (with optional leading article)
+pkg\autograd\ops.go:217:1: exported method Log.Backward should have comment or be unexported
+pkg\autograd\ops.go:234:1: exported method Engine.Log should have comment or be unexported
+pkg\autograd\ops.go:242:1: comment on exported type ReshapeOp should be of the form "ReshapeOp ..." (with optional leading article)
+pkg\autograd\ops.go:249:1: exported method ReshapeOp.Backward should have comment or be unexported
+pkg\autograd\ops.go:262:1: exported method Engine.Reshape should have comment or be unexported
+pkg\dataloader\dataloader.go:31:6: type name will be used as dataloader.DataLoaderConfig by other packages, and that stutters; consider calling this Config
+pkg\layers\batchnorm.go:120:9: if block ends with a return statement, so drop this else and outdent its block
+pkg\layers\dense.go:9:6: exported type Dense should have comment or be unexported
+pkg\layers\dense.go:16:1: exported function NewDense should have comment or be unexported
+pkg\layers\dense.go:45:1: exported method Dense.Forward should have comment or be unexported
+pkg\layers\dense.go:105:1: exported method Dense.Params should have comment or be unexported
+pkg\layers\dropout.go:10:1: comment on exported type Dropout should be of the form "Dropout ..." (with optional leading article)
+pkg\layers\dropout.go:86:1: comment on exported method Dropout.Params should be of the form "Params ..."
+pkg\layers\eval.go:3:1: exported function SetEvalMode should have comment or be unexported
+pkg\matrix\matrix.go:10:1: exported function NewMatrix should have comment or be unexported
+pkg\matrix\matrix.go:36:1: exported function At should have comment or be unexported
+pkg\matrix\matrix.go:40:1: exported function Set should have comment or be unexported
+pkg\matrix\matrix.go:44:1: exported function MatMul should have comment or be unexported
+pkg\matrix\matrix.go:69:1: exported function MatMulParallel should have comment or be unexported
+pkg\matrix\matrix.go:100:1: exported function Transposition should have comment or be unexported
+pkg\matrix\matrix.go:118:1: comment on exported function MatrixToTensor should be of the form "MatrixToTensor ..."
+pkg\matrix\matrix.go:119:6: func name will be used as matrix.MatrixToTensor by other packages, and that stutters; consider calling this ToTensor
+pkg\matrix\matrix.go:127:1: exported function TensorToMatrix should have comment or be unexported
+pkg\metrics\metrics.go:9:6: exported type Metric should have comment or be unexported
+pkg\metrics\metrics.go:23:1: exported function AccuracyFromLabels should have comment or be unexported
+pkg\metrics\metrics.go:39:1: exported function MAEFromSlices should have comment or be unexported
+pkg\metrics\metrics.go:53:1: exported function BinaryPrecisionRecallF1 should have comment or be unexported
+pkg\metrics\metrics.go:81:6: exported type Accuracy should have comment or be unexported
+pkg\metrics\metrics.go:87:1: exported function NewAccuracy should have comment or be unexported
+pkg\metrics\metrics.go:89:1: exported method Accuracy.Update should have comment or be unexported
+pkg\metrics\metrics.go:111:1: exported method Accuracy.Value should have comment or be unexported
+pkg\metrics\metrics.go:120:1: exported method Accuracy.Reset should have comment or be unexported
+pkg\metrics\metrics.go:127:1: exported method Accuracy.Name should have comment or be unexported
+pkg\metrics\metrics.go:129:6: exported type MAE should have comment or be unexported
+pkg\metrics\metrics.go:135:1: exported function NewMAE should have comment or be unexported
+pkg\metrics\metrics.go:137:1: exported method MAE.Update should have comment or be unexported
+pkg\metrics\metrics.go:157:1: exported method MAE.Value should have comment or be unexported
+pkg\metrics\metrics.go:166:1: exported method MAE.Reset should have comment or be unexported
+pkg\metrics\metrics.go:173:1: exported method MAE.Name should have comment or be unexported
+pkg\metrics\metrics.go:175:6: exported type ConfusionMatrix should have comment or be unexported
+pkg\metrics\metrics.go:181:1: exported function NewConfusionMatrix should have comment or be unexported
+pkg\metrics\metrics.go:185:1: exported method ConfusionMatrix.Update should have comment or be unexported
+pkg\metrics\metrics.go:217:1: exported method ConfusionMatrix.PerClassMetrics should have comment or be unexported
+pkg\metrics\metrics.go:271:1: exported method ConfusionMatrix.Reset should have comment or be unexported
+pkg\metrics\metrics.go:278:1: exported method ConfusionMatrix.Name should have comment or be unexported
+pkg\optimizers\rmsprop.go:115:1: exported method RMSProp.ZeroGrad should have comment or be unexported
+pkg\tensor\graph\node.go:7:6: exported type Node should have comment or be unexported
+pkg\tensor\graph\node.go:19:6: exported type BackwardFunc should have comment or be unexported
+pkg\tensor\graph\node.go:21:6: exported type Operation should have comment or be unexported
+pkg\tensor\graph\node.go:25:1: exported function NewNode should have comment or be unexported
+pkg\tensor\graph\node.go:34:1: exported method Node.IsLeaf should have comment or be unexported
+pkg\tensor\graph\node.go:38:1: exported method Node.ZeroGrad should have comment or be unexported
+pkg\tensor\tensor\ops.go:172:1: exported function Max should have comment or be unexported
+pkg\tensor\tensor\ops.go:185:1: exported function Sub should have comment or be unexported
+pkg\tensor\tensor\ops.go:196:1: exported function Div should have comment or be unexported
+pkg\train\callback_logger.go:16:2: exported const LogFormatText should have comment (or a comment on this block) or be unexported
+pkg\train\context.go:228:9: if block ends with a return statement, so drop this else and outdent its block
+pkg\train\train_state.go:10:6: type name will be used as train.TrainState by other packages, and that stutters; consider calling this State
+vendor\gopkg.in\yaml.v3\apic.go:29:6: don't use underscores in Go names; func yaml_insert_token should be yamlInsertToken
+vendor\gopkg.in\yaml.v3\apic.go:49:6: don't use underscores in Go names; func yaml_parser_initialize should be yamlParserInitialize
+vendor\gopkg.in\yaml.v3\apic.go:58:6: don't use underscores in Go names; func yaml_parser_delete should be yamlParserDelete
+vendor\gopkg.in\yaml.v3\apic.go:63:6: don't use underscores in Go names; func yaml_string_read_handler should be yamlStringReadHandler
+vendor\gopkg.in\yaml.v3\apic.go:73:6: don't use underscores in Go names; func yaml_reader_read_handler should be yamlReaderReadHandler
+vendor\gopkg.in\yaml.v3\apic.go:78:6: don't use underscores in Go names; func yaml_parser_set_input_string should be yamlParserSetInputString
+vendor\gopkg.in\yaml.v3\apic.go:88:6: don't use underscores in Go names; func yaml_parser_set_input_reader should be yamlParserSetInputReader
+vendor\gopkg.in\yaml.v3\apic.go:97:6: don't use underscores in Go names; func yaml_parser_set_encoding should be yamlParserSetEncoding
+vendor\gopkg.in\yaml.v3\apic.go:105:6: don't use underscores in Go names; func yaml_emitter_initialize should be yamlEmitterInitialize
+vendor\gopkg.in\yaml.v3\apic.go:116:6: don't use underscores in Go names; func yaml_emitter_delete should be yamlEmitterDelete
+vendor\gopkg.in\yaml.v3\apic.go:121:6: don't use underscores in Go names; func yaml_string_write_handler should be yamlStringWriteHandler
+vendor\gopkg.in\yaml.v3\apic.go:128:6: don't use underscores in Go names; func yaml_writer_write_handler should be yamlWriterWriteHandler
+vendor\gopkg.in\yaml.v3\apic.go:134:6: don't use underscores in Go names; func yaml_emitter_set_output_string should be yamlEmitterSetOutputString
+vendor\gopkg.in\yaml.v3\apic.go:134:62: don't use underscores in Go names; func parameter output_buffer should be outputBuffer
+vendor\gopkg.in\yaml.v3\apic.go:143:6: don't use underscores in Go names; func yaml_emitter_set_output_writer should be yamlEmitterSetOutputWriter
+vendor\gopkg.in\yaml.v3\apic.go:152:6: don't use underscores in Go names; func yaml_emitter_set_encoding should be yamlEmitterSetEncoding
+vendor\gopkg.in\yaml.v3\apic.go:160:6: don't use underscores in Go names; func yaml_emitter_set_canonical should be yamlEmitterSetCanonical
+vendor\gopkg.in\yaml.v3\apic.go:165:6: don't use underscores in Go names; func yaml_emitter_set_indent should be yamlEmitterSetIndent
+vendor\gopkg.in\yaml.v3\apic.go:173:6: don't use underscores in Go names; func yaml_emitter_set_width should be yamlEmitterSetWidth
+vendor\gopkg.in\yaml.v3\apic.go:181:6: don't use underscores in Go names; func yaml_emitter_set_unicode should be yamlEmitterSetUnicode
+vendor\gopkg.in\yaml.v3\apic.go:186:6: don't use underscores in Go names; func yaml_emitter_set_break should be yamlEmitterSetBreak
+vendor\gopkg.in\yaml.v3\apic.go:186:54: don't use underscores in Go names; func parameter line_break should be lineBreak
+vendor\gopkg.in\yaml.v3\apic.go:277:6: don't use underscores in Go names; func yaml_stream_start_event_initialize should be yamlStreamStartEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:285:6: don't use underscores in Go names; func yaml_stream_end_event_initialize should be yamlStreamEndEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:292:6: don't use underscores in Go names; func yaml_document_start_event_initialize should be yamlDocumentStartEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:294:2: don't use underscores in Go names; func parameter version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\apic.go:295:2: don't use underscores in Go names; func parameter tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\apic.go:307:6: don't use underscores in Go names; func yaml_document_end_event_initialize should be yamlDocumentEndEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:315:6: don't use underscores in Go names; func yaml_alias_event_initialize should be yamlAliasEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:324:6: don't use underscores in Go names; func yaml_scalar_event_initialize should be yamlScalarEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:324:83: don't use underscores in Go names; func parameter plain_implicit should be plainImplicit
+vendor\gopkg.in\yaml.v3\apic.go:324:99: don't use underscores in Go names; func parameter quoted_implicit should be quotedImplicit
+vendor\gopkg.in\yaml.v3\apic.go:338:6: don't use underscores in Go names; func yaml_sequence_start_event_initialize should be yamlSequenceStartEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:350:6: don't use underscores in Go names; func yaml_sequence_end_event_initialize should be yamlSequenceEndEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:358:6: don't use underscores in Go names; func yaml_mapping_start_event_initialize should be yamlMappingStartEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:369:6: don't use underscores in Go names; func yaml_mapping_end_event_initialize should be yamlMappingEndEventInitialize
+vendor\gopkg.in\yaml.v3\apic.go:376:6: don't use underscores in Go names; func yaml_event_delete should be yamlEventDelete
+vendor\gopkg.in\yaml.v3\decode.go:458:2: don't use underscores in Go names; const alias_ratio_range_low should be aliasRatioRangeLow
+vendor\gopkg.in\yaml.v3\decode.go:462:2: don't use underscores in Go names; const alias_ratio_range_high should be aliasRatioRangeHigh
+vendor\gopkg.in\yaml.v3\decode.go:465:2: don't use underscores in Go names; const alias_ratio_range should be aliasRatioRange
+vendor\gopkg.in\yaml.v3\emitterc.go:50:6: don't use underscores in Go names; func put_break should be putBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:57:3: should replace emitter.buffer_pos += 1 with emitter.buffer_pos++
+vendor\gopkg.in\yaml.v3\emitterc.go:60:3: should replace emitter.buffer_pos += 1 with emitter.buffer_pos++
+vendor\gopkg.in\yaml.v3\emitterc.go:107:6: don't use underscores in Go names; func write_all should be writeAll
+vendor\gopkg.in\yaml.v3\emitterc.go:117:6: don't use underscores in Go names; func write_break should be writeBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:139:6: don't use underscores in Go names; func yaml_emitter_set_emitter_error should be yamlEmitterSetEmitterError
+vendor\gopkg.in\yaml.v3\emitterc.go:146:6: don't use underscores in Go names; func yaml_emitter_emit should be yamlEmitterEmit
+vendor\gopkg.in\yaml.v3\emitterc.go:169:6: don't use underscores in Go names; func yaml_emitter_need_more_events should be yamlEmitterNeedMoreEvents
+vendor\gopkg.in\yaml.v3\emitterc.go:206:6: don't use underscores in Go names; func yaml_emitter_append_tag_directive should be yamlEmitterAppendTagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:206:94: don't use underscores in Go names; func parameter allow_duplicates should be allowDuplicates
+vendor\gopkg.in\yaml.v3\emitterc.go:218:2: don't use underscores in Go names; var tag_copy should be tagCopy
+vendor\gopkg.in\yaml.v3\emitterc.go:229:6: don't use underscores in Go names; func yaml_emitter_increase_indent should be yamlEmitterIncreaseIndent
+vendor\gopkg.in\yaml.v3\emitterc.go:251:6: don't use underscores in Go names; func yaml_emitter_state_machine should be yamlEmitterStateMachine
+vendor\gopkg.in\yaml.v3\emitterc.go:318:6: don't use underscores in Go names; func yaml_emitter_emit_stream_start should be yamlEmitterEmitStreamStart
+vendor\gopkg.in\yaml.v3\emitterc.go:359:6: don't use underscores in Go names; func yaml_emitter_emit_document_start should be yamlEmitterEmitDocumentStart
+vendor\gopkg.in\yaml.v3\emitterc.go:370:4: don't use underscores in Go names; var tag_directive should be tagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:380:4: don't use underscores in Go names; var tag_directive should be tagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:416:5: don't use underscores in Go names; var tag_directive should be tagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:482:6: don't use underscores in Go names; func yaml_emitter_emit_document_content should be yamlEmitterEmitDocumentContent
+vendor\gopkg.in\yaml.v3\emitterc.go:501:6: don't use underscores in Go names; func yaml_emitter_emit_document_end should be yamlEmitterEmitDocumentEnd
+vendor\gopkg.in\yaml.v3\emitterc.go:532:6: don't use underscores in Go names; func yaml_emitter_emit_flow_sequence_item should be yamlEmitterEmitFlowSequenceItem
+vendor\gopkg.in\yaml.v3\emitterc.go:615:6: don't use underscores in Go names; func yaml_emitter_emit_flow_mapping_key should be yamlEmitterEmitFlowMappingKey
+vendor\gopkg.in\yaml.v3\emitterc.go:691:6: don't use underscores in Go names; func yaml_emitter_emit_flow_mapping_value should be yamlEmitterEmitFlowMappingValue
+vendor\gopkg.in\yaml.v3\emitterc.go:729:6: don't use underscores in Go names; func yaml_emitter_emit_block_sequence_item should be yamlEmitterEmitBlockSequenceItem
+vendor\gopkg.in\yaml.v3\emitterc.go:765:6: don't use underscores in Go names; func yaml_emitter_emit_block_mapping_key should be yamlEmitterEmitBlockMappingKey
+vendor\gopkg.in\yaml.v3\emitterc.go:803:6: don't use underscores in Go names; func yaml_emitter_emit_block_mapping_value should be yamlEmitterEmitBlockMappingValue
+vendor\gopkg.in\yaml.v3\emitterc.go:850:6: don't use underscores in Go names; func yaml_emitter_silent_nil_event should be yamlEmitterSilentNilEvent
+vendor\gopkg.in\yaml.v3\emitterc.go:855:6: don't use underscores in Go names; func yaml_emitter_emit_node should be yamlEmitterEmitNode
+vendor\gopkg.in\yaml.v3\emitterc.go:856:42: don't use underscores in Go names; func parameter simple_key should be simpleKey
+vendor\gopkg.in\yaml.v3\emitterc.go:879:6: don't use underscores in Go names; func yaml_emitter_emit_alias should be yamlEmitterEmitAlias
+vendor\gopkg.in\yaml.v3\emitterc.go:889:6: don't use underscores in Go names; func yaml_emitter_emit_scalar should be yamlEmitterEmitScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:913:6: don't use underscores in Go names; func yaml_emitter_emit_sequence_start should be yamlEmitterEmitSequenceStart
+vendor\gopkg.in\yaml.v3\emitterc.go:930:6: don't use underscores in Go names; func yaml_emitter_emit_mapping_start should be yamlEmitterEmitMappingStart
+vendor\gopkg.in\yaml.v3\emitterc.go:947:6: don't use underscores in Go names; func yaml_emitter_check_empty_document should be yamlEmitterCheckEmptyDocument
+vendor\gopkg.in\yaml.v3\emitterc.go:952:6: don't use underscores in Go names; func yaml_emitter_check_empty_sequence should be yamlEmitterCheckEmptySequence
+vendor\gopkg.in\yaml.v3\emitterc.go:961:6: don't use underscores in Go names; func yaml_emitter_check_empty_mapping should be yamlEmitterCheckEmptyMapping
+vendor\gopkg.in\yaml.v3\emitterc.go:970:6: don't use underscores in Go names; func yaml_emitter_check_simple_key should be yamlEmitterCheckSimpleKey
+vendor\gopkg.in\yaml.v3\emitterc.go:1004:6: don't use underscores in Go names; func yaml_emitter_select_scalar_style should be yamlEmitterSelectScalarStyle
+vendor\gopkg.in\yaml.v3\emitterc.go:1006:2: don't use underscores in Go names; var no_tag should be noTag
+vendor\gopkg.in\yaml.v3\emitterc.go:1053:6: don't use underscores in Go names; func yaml_emitter_process_anchor should be yamlEmitterProcessAnchor
+vendor\gopkg.in\yaml.v3\emitterc.go:1068:6: don't use underscores in Go names; func yaml_emitter_process_tag should be yamlEmitterProcessTag
+vendor\gopkg.in\yaml.v3\emitterc.go:1097:6: don't use underscores in Go names; func yaml_emitter_process_scalar should be yamlEmitterProcessScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1118:6: don't use underscores in Go names; func yaml_emitter_process_head_comment should be yamlEmitterProcessHeadComment
+vendor\gopkg.in\yaml.v3\emitterc.go:1147:6: don't use underscores in Go names; func yaml_emitter_process_line_comment should be yamlEmitterProcessLineComment
+vendor\gopkg.in\yaml.v3\emitterc.go:1164:6: don't use underscores in Go names; func yaml_emitter_process_foot_comment should be yamlEmitterProcessFootComment
+vendor\gopkg.in\yaml.v3\emitterc.go:1183:6: don't use underscores in Go names; func yaml_emitter_analyze_version_directive should be yamlEmitterAnalyzeVersionDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:1183:70: don't use underscores in Go names; func parameter version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:1191:6: don't use underscores in Go names; func yaml_emitter_analyze_tag_directive should be yamlEmitterAnalyzeTagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:1191:66: don't use underscores in Go names; func parameter tag_directive should be tagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:1215:6: don't use underscores in Go names; func yaml_emitter_analyze_anchor should be yamlEmitterAnalyzeAnchor
+vendor\gopkg.in\yaml.v3\emitterc.go:1238:6: don't use underscores in Go names; func yaml_emitter_analyze_tag should be yamlEmitterAnalyzeTag
+vendor\gopkg.in\yaml.v3\emitterc.go:1243:3: don't use underscores in Go names; var tag_directive should be tagDirective
+vendor\gopkg.in\yaml.v3\emitterc.go:1255:6: don't use underscores in Go names; func yaml_emitter_analyze_scalar should be yamlEmitterAnalyzeScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1257:3: don't use underscores in Go names; var block_indicators should be blockIndicators
+vendor\gopkg.in\yaml.v3\emitterc.go:1258:3: don't use underscores in Go names; var flow_indicators should be flowIndicators
+vendor\gopkg.in\yaml.v3\emitterc.go:1259:3: don't use underscores in Go names; var line_breaks should be lineBreaks
+vendor\gopkg.in\yaml.v3\emitterc.go:1260:3: don't use underscores in Go names; var special_characters should be specialCharacters
+vendor\gopkg.in\yaml.v3\emitterc.go:1261:3: don't use underscores in Go names; var tab_characters should be tabCharacters
+vendor\gopkg.in\yaml.v3\emitterc.go:1263:3: don't use underscores in Go names; var leading_space should be leadingSpace
+vendor\gopkg.in\yaml.v3\emitterc.go:1264:3: don't use underscores in Go names; var leading_break should be leadingBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:1265:3: don't use underscores in Go names; var trailing_space should be trailingSpace
+vendor\gopkg.in\yaml.v3\emitterc.go:1266:3: don't use underscores in Go names; var trailing_break should be trailingBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:1267:3: don't use underscores in Go names; var break_space should be breakSpace
+vendor\gopkg.in\yaml.v3\emitterc.go:1268:3: don't use underscores in Go names; var space_break should be spaceBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:1270:3: don't use underscores in Go names; var preceded_by_whitespace should be precededByWhitespace
+vendor\gopkg.in\yaml.v3\emitterc.go:1271:3: don't use underscores in Go names; var followed_by_whitespace should be followedByWhitespace
+vendor\gopkg.in\yaml.v3\emitterc.go:1272:3: don't use underscores in Go names; var previous_space should be previousSpace
+vendor\gopkg.in\yaml.v3\emitterc.go:1273:3: don't use underscores in Go names; var previous_break should be previousBreak
+vendor\gopkg.in\yaml.v3\emitterc.go:1409:6: don't use underscores in Go names; func yaml_emitter_analyze_event should be yamlEmitterAnalyzeEvent
+vendor\gopkg.in\yaml.v3\emitterc.go:1478:6: don't use underscores in Go names; func yaml_emitter_write_bom should be yamlEmitterWriteBom
+vendor\gopkg.in\yaml.v3\emitterc.go:1490:6: don't use underscores in Go names; func yaml_emitter_write_indent should be yamlEmitterWriteIndent
+vendor\gopkg.in\yaml.v3\emitterc.go:1517:6: don't use underscores in Go names; func yaml_emitter_write_indicator should be yamlEmitterWriteIndicator
+vendor\gopkg.in\yaml.v3\emitterc.go:1517:78: don't use underscores in Go names; func parameter need_whitespace should be needWhitespace
+vendor\gopkg.in\yaml.v3\emitterc.go:1517:95: don't use underscores in Go names; func parameter is_whitespace should be isWhitespace
+vendor\gopkg.in\yaml.v3\emitterc.go:1517:110: don't use underscores in Go names; func parameter is_indention should be isIndention
+vendor\gopkg.in\yaml.v3\emitterc.go:1532:6: don't use underscores in Go names; func yaml_emitter_write_anchor should be yamlEmitterWriteAnchor
+vendor\gopkg.in\yaml.v3\emitterc.go:1541:6: don't use underscores in Go names; func yaml_emitter_write_tag_handle should be yamlEmitterWriteTagHandle
+vendor\gopkg.in\yaml.v3\emitterc.go:1555:6: don't use underscores in Go names; func yaml_emitter_write_tag_content should be yamlEmitterWriteTagContent
+vendor\gopkg.in\yaml.v3\emitterc.go:1555:76: don't use underscores in Go names; func parameter need_whitespace should be needWhitespace
+vendor\gopkg.in\yaml.v3\emitterc.go:1562:7: don't use underscores in Go names; var must_write should be mustWrite
+vendor\gopkg.in\yaml.v3\emitterc.go:1609:6: don't use underscores in Go names; func yaml_emitter_write_plain_scalar should be yamlEmitterWritePlainScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1609:77: don't use underscores in Go names; func parameter allow_breaks should be allowBreaks
+vendor\gopkg.in\yaml.v3\emitterc.go:1668:6: don't use underscores in Go names; func yaml_emitter_write_single_quoted_scalar should be yamlEmitterWriteSingleQuotedScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1668:85: don't use underscores in Go names; func parameter allow_breaks should be allowBreaks
+vendor\gopkg.in\yaml.v3\emitterc.go:1727:6: don't use underscores in Go names; func yaml_emitter_write_double_quoted_scalar should be yamlEmitterWriteDoubleQuotedScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1727:85: don't use underscores in Go names; func parameter allow_breaks should be allowBreaks
+vendor\gopkg.in\yaml.v3\emitterc.go:1848:6: don't use underscores in Go names; func yaml_emitter_write_block_scalar_hints should be yamlEmitterWriteBlockScalarHints
+vendor\gopkg.in\yaml.v3\emitterc.go:1850:3: don't use underscores in Go names; var indent_hint should be indentHint
+vendor\gopkg.in\yaml.v3\emitterc.go:1858:6: don't use underscores in Go names; var chomp_hint should be chompHint
+vendor\gopkg.in\yaml.v3\emitterc.go:1890:6: don't use underscores in Go names; func yaml_emitter_write_literal_scalar should be yamlEmitterWriteLiteralScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1927:6: don't use underscores in Go names; func yaml_emitter_write_folded_scalar should be yamlEmitterWriteFoldedScalar
+vendor\gopkg.in\yaml.v3\emitterc.go:1942:2: don't use underscores in Go names; var leading_spaces should be leadingSpaces
+vendor\gopkg.in\yaml.v3\emitterc.go:1985:6: don't use underscores in Go names; func yaml_emitter_write_comment should be yamlEmitterWriteComment
+vendor\gopkg.in\yaml.v3\parserc.go:68:6: don't use underscores in Go names; func peek_token should be peekToken
+vendor\gopkg.in\yaml.v3\parserc.go:80:6: don't use underscores in Go names; func yaml_parser_unfold_comments should be yamlParserUnfoldComments
+vendor\gopkg.in\yaml.v3\parserc.go:111:6: don't use underscores in Go names; func skip_token should be skipToken
+vendor\gopkg.in\yaml.v3\parserc.go:119:6: don't use underscores in Go names; func yaml_parser_parse should be yamlParserParse
+vendor\gopkg.in\yaml.v3\parserc.go:133:6: don't use underscores in Go names; func yaml_parser_set_parser_error should be yamlParserSetParserError
+vendor\gopkg.in\yaml.v3\parserc.go:133:74: don't use underscores in Go names; func parameter problem_mark should be problemMark
+vendor\gopkg.in\yaml.v3\parserc.go:140:6: don't use underscores in Go names; func yaml_parser_set_parser_error_context should be yamlParserSetParserErrorContext
+vendor\gopkg.in\yaml.v3\parserc.go:140:82: don't use underscores in Go names; func parameter context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\parserc.go:140:124: don't use underscores in Go names; func parameter problem_mark should be problemMark
+vendor\gopkg.in\yaml.v3\parserc.go:150:6: don't use underscores in Go names; func yaml_parser_state_machine should be yamlParserStateMachine
+vendor\gopkg.in\yaml.v3\parserc.go:231:6: don't use underscores in Go names; func yaml_parser_parse_stream_start should be yamlParserParseStreamStart
+vendor\gopkg.in\yaml.v3\parserc.go:255:6: don't use underscores in Go names; func yaml_parser_parse_document_start should be yamlParserParseDocumentStart
+vendor\gopkg.in\yaml.v3\parserc.go:284:7: don't use underscores in Go names; var head_comment should be headComment
+vendor\gopkg.in\yaml.v3\parserc.go:314:7: don't use underscores in Go names; var version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\parserc.go:315:7: don't use underscores in Go names; var tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\parserc.go:316:3: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\parserc.go:331:3: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\parserc.go:361:6: don't use underscores in Go names; func yaml_parser_parse_document_content should be yamlParserParseDocumentContent
+vendor\gopkg.in\yaml.v3\parserc.go:385:6: don't use underscores in Go names; func yaml_parser_parse_document_end should be yamlParserParseDocumentEnd
+vendor\gopkg.in\yaml.v3\parserc.go:391:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\parserc.go:392:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\parserc.go:418:6: don't use underscores in Go names; func yaml_parser_set_event_comments should be yamlParserSetEventComments
+vendor\gopkg.in\yaml.v3\parserc.go:455:6: don't use underscores in Go names; func yaml_parser_parse_node should be yamlParserParseNode
+vendor\gopkg.in\yaml.v3\parserc.go:455:80: don't use underscores in Go names; func parameter indentless_sequence should be indentlessSequence
+vendor\gopkg.in\yaml.v3\parserc.go:477:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\parserc.go:478:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\parserc.go:480:6: don't use underscores in Go names; var tag_token should be tagToken
+vendor\gopkg.in\yaml.v3\parserc.go:481:6: don't use underscores in Go names; var tag_handle should be tagHandle
+vendor\gopkg.in\yaml.v3\parserc.go:481:18: don't use underscores in Go names; var tag_suffix should be tagSuffix
+vendor\gopkg.in\yaml.v3\parserc.go:482:6: don't use underscores in Go names; var tag_mark should be tagMark
+vendor\gopkg.in\yaml.v3\parserc.go:565:7: don't use underscores in Go names; var plain_implicit should be plainImplicit
+vendor\gopkg.in\yaml.v3\parserc.go:565:23: don't use underscores in Go names; var quoted_implicit should be quotedImplicit
+vendor\gopkg.in\yaml.v3\parserc.go:687:6: don't use underscores in Go names; func yaml_parser_parse_block_sequence_entry should be yamlParserParseBlockSequenceEntry
+vendor\gopkg.in\yaml.v3\parserc.go:704:3: don't use underscores in Go names; var prior_head_len should be priorHeadLen
+vendor\gopkg.in\yaml.v3\parserc.go:714:10: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\parserc.go:734:2: don't use underscores in Go names; var context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\parserc.go:744:6: don't use underscores in Go names; func yaml_parser_parse_indentless_sequence_entry should be yamlParserParseIndentlessSequenceEntry
+vendor\gopkg.in\yaml.v3\parserc.go:752:3: don't use underscores in Go names; var prior_head_len should be priorHeadLen
+vendor\gopkg.in\yaml.v3\parserc.go:786:6: don't use underscores in Go names; func yaml_parser_split_stem_comment should be yamlParserSplitStemComment
+vendor\gopkg.in\yaml.v3\parserc.go:786:60: don't use underscores in Go names; func parameter stem_len should be stemLen
+vendor\gopkg.in\yaml.v3\parserc.go:816:6: don't use underscores in Go names; func yaml_parser_parse_block_mapping_key should be yamlParserParseBlockMappingKey
+vendor\gopkg.in\yaml.v3\parserc.go:856:10: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\parserc.go:874:2: don't use underscores in Go names; var context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\parserc.go:891:6: don't use underscores in Go names; func yaml_parser_parse_block_mapping_value should be yamlParserParseBlockMappingValue
+vendor\gopkg.in\yaml.v3\parserc.go:928:6: don't use underscores in Go names; func yaml_parser_parse_flow_sequence_entry should be yamlParserParseFlowSequenceEntry
+vendor\gopkg.in\yaml.v3\parserc.go:950:5: don't use underscores in Go names; var context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\parserc.go:995:6: don't use underscores in Go names; func yaml_parser_parse_flow_sequence_entry_mapping_key should be yamlParserParseFlowSequenceEntryMappingKey
+vendor\gopkg.in\yaml.v3\parserc.go:1016:6: don't use underscores in Go names; func yaml_parser_parse_flow_sequence_entry_mapping_value should be yamlParserParseFlowSequenceEntryMappingValue
+vendor\gopkg.in\yaml.v3\parserc.go:1040:6: don't use underscores in Go names; func yaml_parser_parse_flow_sequence_entry_mapping_end should be yamlParserParseFlowSequenceEntryMappingEnd
+vendor\gopkg.in\yaml.v3\parserc.go:1066:6: don't use underscores in Go names; func yaml_parser_parse_flow_mapping_key should be yamlParserParseFlowMappingKey
+vendor\gopkg.in\yaml.v3\parserc.go:1087:5: don't use underscores in Go names; var context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\parserc.go:1106:11: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\parserc.go:1133:6: don't use underscores in Go names; func yaml_parser_parse_flow_mapping_value should be yamlParserParseFlowMappingValue
+vendor\gopkg.in\yaml.v3\parserc.go:1158:6: don't use underscores in Go names; func yaml_parser_process_empty_scalar should be yamlParserProcessEmptyScalar
+vendor\gopkg.in\yaml.v3\parserc.go:1170:5: don't use underscores in Go names; var default_tag_directives should be defaultTagDirectives
+vendor\gopkg.in\yaml.v3\parserc.go:1176:6: don't use underscores in Go names; func yaml_parser_process_directives should be yamlParserProcessDirectives
+vendor\gopkg.in\yaml.v3\parserc.go:1177:2: don't use underscores in Go names; func parameter version_directive_ref should be versionDirectiveRef
+vendor\gopkg.in\yaml.v3\parserc.go:1178:2: don't use underscores in Go names; func parameter tag_directives_ref should be tagDirectivesRef
+vendor\gopkg.in\yaml.v3\parserc.go:1180:6: don't use underscores in Go names; var version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\parserc.go:1181:6: don't use underscores in Go names; var tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\parserc.go:1238:6: don't use underscores in Go names; func yaml_parser_append_tag_directive should be yamlParserAppendTagDirective
+vendor\gopkg.in\yaml.v3\parserc.go:1238:90: don't use underscores in Go names; func parameter allow_duplicates should be allowDuplicates
+vendor\gopkg.in\yaml.v3\parserc.go:1250:2: don't use underscores in Go names; var value_copy should be valueCopy
+vendor\gopkg.in\yaml.v3\readerc.go:30:6: don't use underscores in Go names; func yaml_parser_set_reader_error should be yamlParserSetReaderError
+vendor\gopkg.in\yaml.v3\readerc.go:40:2: don't use underscores in Go names; const bom_UTF8 should be bomUTF8
+vendor\gopkg.in\yaml.v3\readerc.go:41:2: don't use underscores in Go names; const bom_UTF16LE should be bomUTF16LE
+vendor\gopkg.in\yaml.v3\readerc.go:42:2: don't use underscores in Go names; const bom_UTF16BE should be bomUTF16BE
+vendor\gopkg.in\yaml.v3\readerc.go:47:6: don't use underscores in Go names; func yaml_parser_determine_encoding should be yamlParserDetermineEncoding
+vendor\gopkg.in\yaml.v3\readerc.go:78:6: don't use underscores in Go names; func yaml_parser_update_raw_buffer should be yamlParserUpdateRawBuffer
+vendor\gopkg.in\yaml.v3\readerc.go:79:2: don't use underscores in Go names; var size_read should be sizeRead
+vendor\gopkg.in\yaml.v3\readerc.go:99:2: don't use underscores in Go names; var size_read should be sizeRead
+vendor\gopkg.in\yaml.v3\readerc.go:113:6: don't use underscores in Go names; func yaml_parser_update_buffer should be yamlParserUpdateBuffer
+vendor\gopkg.in\yaml.v3\readerc.go:145:2: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\readerc.go:148:3: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\readerc.go:177:4: don't use underscores in Go names; var raw_unread should be rawUnread
+vendor\gopkg.in\yaml.v3\readerc.go:391:5: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\readerc.go:391:5: should replace buffer_len += 1 with buffer_len++
+vendor\gopkg.in\yaml.v3\readerc.go:396:5: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\readerc.go:402:5: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\readerc.go:409:5: don't use underscores in Go names; var buffer_len should be bufferLen
+vendor\gopkg.in\yaml.v3\resolve.go:196:12: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\resolve.go:215:13: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\resolve.go:228:13: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\resolve.go:242:13: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\resolve.go:255:13: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\scannerc.go:523:6: don't use underscores in Go names; func skip_line should be skipLine
+vendor\gopkg.in\yaml.v3\scannerc.go:568:6: don't use underscores in Go names; func read_line should be readLine
+vendor\gopkg.in\yaml.v3\scannerc.go:581:3: should replace parser.buffer_pos += 1 with parser.buffer_pos++
+vendor\gopkg.in\yaml.v3\scannerc.go:602:6: don't use underscores in Go names; func yaml_parser_scan should be yamlParserScan
+vendor\gopkg.in\yaml.v3\scannerc.go:631:6: don't use underscores in Go names; func yaml_parser_set_scanner_error should be yamlParserSetScannerError
+vendor\gopkg.in\yaml.v3\scannerc.go:631:75: don't use underscores in Go names; func parameter context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\scannerc.go:640:6: don't use underscores in Go names; func yaml_parser_set_scanner_tag_error should be yamlParserSetScannerTagError
+vendor\gopkg.in\yaml.v3\scannerc.go:640:79: don't use underscores in Go names; func parameter context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\scannerc.go:657:6: don't use underscores in Go names; func yaml_parser_fetch_more_tokens should be yamlParserFetchMoreTokens
+vendor\gopkg.in\yaml.v3\scannerc.go:667:4: don't use underscores in Go names; var head_tok_idx should be headTokIdx
+vendor\gopkg.in\yaml.v3\scannerc.go:687:6: don't use underscores in Go names; func yaml_parser_fetch_next_token should be yamlParserFetchNextToken
+vendor\gopkg.in\yaml.v3\scannerc.go:698:2: don't use underscores in Go names; var scan_mark should be scanMark
+vendor\gopkg.in\yaml.v3\scannerc.go:743:2: don't use underscores in Go names; var comment_mark should be commentMark
+vendor\gopkg.in\yaml.v3\scannerc.go:883:6: don't use underscores in Go names; func yaml_simple_key_is_valid should be yamlSimpleKeyIsValid
+vendor\gopkg.in\yaml.v3\scannerc.go:883:54: don't use underscores in Go names; func parameter simple_key should be simpleKey
+vendor\gopkg.in\yaml.v3\scannerc.go:911:6: don't use underscores in Go names; func yaml_parser_save_simple_key should be yamlParserSaveSimpleKey
+vendor\gopkg.in\yaml.v3\scannerc.go:922:3: don't use underscores in Go names; var simple_key should be simpleKey
+vendor\gopkg.in\yaml.v3\scannerc.go:939:6: don't use underscores in Go names; func yaml_parser_remove_simple_key should be yamlParserRemoveSimpleKey
+vendor\gopkg.in\yaml.v3\scannerc.go:956:7: don't use underscores in Go names; const max_flow_level should be maxFlowLevel
+vendor\gopkg.in\yaml.v3\scannerc.go:959:6: don't use underscores in Go names; func yaml_parser_increase_flow_level should be yamlParserIncreaseFlowLevel
+vendor\gopkg.in\yaml.v3\scannerc.go:979:6: don't use underscores in Go names; func yaml_parser_decrease_flow_level should be yamlParserDecreaseFlowLevel
+vendor\gopkg.in\yaml.v3\scannerc.go:990:7: don't use underscores in Go names; const max_indents should be maxIndents
+vendor\gopkg.in\yaml.v3\scannerc.go:995:6: don't use underscores in Go names; func yaml_parser_roll_indent should be yamlParserRollIndent
+vendor\gopkg.in\yaml.v3\scannerc.go:1029:6: don't use underscores in Go names; func yaml_parser_unroll_indent should be yamlParserUnrollIndent
+vendor\gopkg.in\yaml.v3\scannerc.go:1029:67: don't use underscores in Go names; func parameter scan_mark should be scanMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1035:2: don't use underscores in Go names; var block_mark should be blockMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1045:3: don't use underscores in Go names; var stop_index should be stopIndex
+vendor\gopkg.in\yaml.v3\scannerc.go:1083:6: don't use underscores in Go names; func yaml_parser_fetch_stream_start should be yamlParserFetchStreamStart
+vendor\gopkg.in\yaml.v3\scannerc.go:1111:6: don't use underscores in Go names; func yaml_parser_fetch_stream_end should be yamlParserFetchStreamEnd
+vendor\gopkg.in\yaml.v3\scannerc.go:1142:6: don't use underscores in Go names; func yaml_parser_fetch_directive should be yamlParserFetchDirective
+vendor\gopkg.in\yaml.v3\scannerc.go:1166:6: don't use underscores in Go names; func yaml_parser_fetch_document_indicator should be yamlParserFetchDocumentIndicator
+vendor\gopkg.in\yaml.v3\scannerc.go:1180:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1186:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1200:6: don't use underscores in Go names; func yaml_parser_fetch_flow_collection_start should be yamlParserFetchFlowCollectionStart
+vendor\gopkg.in\yaml.v3\scannerc.go:1216:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1218:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1232:6: don't use underscores in Go names; func yaml_parser_fetch_flow_collection_end should be yamlParserFetchFlowCollectionEnd
+vendor\gopkg.in\yaml.v3\scannerc.go:1248:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1250:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1264:6: don't use underscores in Go names; func yaml_parser_fetch_flow_entry should be yamlParserFetchFlowEntry
+vendor\gopkg.in\yaml.v3\scannerc.go:1274:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1276:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1289:6: don't use underscores in Go names; func yaml_parser_fetch_block_entry should be yamlParserFetchBlockEntry
+vendor\gopkg.in\yaml.v3\scannerc.go:1316:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1318:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1331:6: don't use underscores in Go names; func yaml_parser_fetch_key should be yamlParserFetchKey
+vendor\gopkg.in\yaml.v3\scannerc.go:1355:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1357:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1370:6: don't use underscores in Go names; func yaml_parser_fetch_value should be yamlParserFetchValue
+vendor\gopkg.in\yaml.v3\scannerc.go:1372:2: don't use underscores in Go names; var simple_key should be simpleKey
+vendor\gopkg.in\yaml.v3\scannerc.go:1425:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1427:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1440:6: don't use underscores in Go names; func yaml_parser_fetch_anchor should be yamlParserFetchAnchor
+vendor\gopkg.in\yaml.v3\scannerc.go:1459:6: don't use underscores in Go names; func yaml_parser_fetch_tag should be yamlParserFetchTag
+vendor\gopkg.in\yaml.v3\scannerc.go:1478:6: don't use underscores in Go names; func yaml_parser_fetch_block_scalar should be yamlParserFetchBlockScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:1497:6: don't use underscores in Go names; func yaml_parser_fetch_flow_scalar should be yamlParserFetchFlowScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:1516:6: don't use underscores in Go names; func yaml_parser_fetch_plain_scalar should be yamlParserFetchPlainScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:1535:6: don't use underscores in Go names; func yaml_parser_scan_to_next_token should be yamlParserScanToNextToken
+vendor\gopkg.in\yaml.v3\scannerc.go:1537:2: don't use underscores in Go names; var scan_mark should be scanMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1622:6: don't use underscores in Go names; func yaml_parser_scan_directive should be yamlParserScanDirective
+vendor\gopkg.in\yaml.v3\scannerc.go:1624:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1640:3: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1658:3: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1727:6: don't use underscores in Go names; func yaml_parser_scan_directive_name should be yamlParserScanDirectiveName
+vendor\gopkg.in\yaml.v3\scannerc.go:1727:61: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1763:6: don't use underscores in Go names; func yaml_parser_scan_version_directive_value should be yamlParserScanVersionDirectiveValue
+vendor\gopkg.in\yaml.v3\scannerc.go:1763:70: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1795:7: don't use underscores in Go names; const max_number_length should be maxNumberLength
+vendor\gopkg.in\yaml.v3\scannerc.go:1804:6: don't use underscores in Go names; func yaml_parser_scan_version_directive_number should be yamlParserScanVersionDirectiveNumber
+vendor\gopkg.in\yaml.v3\scannerc.go:1804:71: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1840:6: don't use underscores in Go names; func yaml_parser_scan_tag_directive_value should be yamlParserScanTagDirectiveValue
+vendor\gopkg.in\yaml.v3\scannerc.go:1840:66: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1841:6: don't use underscores in Go names; var handle_value should be handleValue
+vendor\gopkg.in\yaml.v3\scannerc.go:1841:20: don't use underscores in Go names; var prefix_value should be prefixValue
+vendor\gopkg.in\yaml.v3\scannerc.go:1898:6: don't use underscores in Go names; func yaml_parser_scan_anchor should be yamlParserScanAnchor
+vendor\gopkg.in\yaml.v3\scannerc.go:1902:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1917:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:1956:6: don't use underscores in Go names; func yaml_parser_scan_tag should be yamlParserScanTag
+vendor\gopkg.in\yaml.v3\scannerc.go:1959:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2027:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2041:6: don't use underscores in Go names; func yaml_parser_scan_tag_handle should be yamlParserScanTagHandle
+vendor\gopkg.in\yaml.v3\scannerc.go:2041:73: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2086:6: don't use underscores in Go names; func yaml_parser_scan_tag_uri should be yamlParserScanTagURI
+vendor\gopkg.in\yaml.v3\scannerc.go:2086:83: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2144:6: don't use underscores in Go names; func yaml_parser_scan_uri_escapes should be yamlParserScanURIEscapes
+vendor\gopkg.in\yaml.v3\scannerc.go:2144:74: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2190:6: don't use underscores in Go names; func yaml_parser_scan_block_scalar should be yamlParserScanBlockScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:2192:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2289:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2302:9: don't use underscores in Go names; var leading_break should be leadingBreak
+vendor\gopkg.in\yaml.v3\scannerc.go:2302:24: don't use underscores in Go names; var trailing_breaks should be trailingBreaks
+vendor\gopkg.in\yaml.v3\scannerc.go:2311:6: don't use underscores in Go names; var leading_blank should be leadingBlank
+vendor\gopkg.in\yaml.v3\scannerc.go:2311:21: don't use underscores in Go names; var trailing_blank should be trailingBlank
+vendor\gopkg.in\yaml.v3\scannerc.go:2381:6: don't use underscores in Go names; func yaml_parser_scan_block_scalar_breaks should be yamlParserScanBlockScalarBreaks
+vendor\gopkg.in\yaml.v3\scannerc.go:2381:95: don't use underscores in Go names; func parameter start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2381:119: don't use underscores in Go names; func parameter end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2385:2: don't use underscores in Go names; var max_indent should be maxIndent
+vendor\gopkg.in\yaml.v3\scannerc.go:2435:6: don't use underscores in Go names; func yaml_parser_scan_flow_scalar should be yamlParserScanFlowScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:2437:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2441:9: don't use underscores in Go names; var leading_break should be leadingBreak
+vendor\gopkg.in\yaml.v3\scannerc.go:2441:24: don't use underscores in Go names; var trailing_breaks should be trailingBreaks
+vendor\gopkg.in\yaml.v3\scannerc.go:2469:3: don't use underscores in Go names; var leading_blanks should be leadingBlanks
+vendor\gopkg.in\yaml.v3\scannerc.go:2496:5: don't use underscores in Go names; var code_length should be codeLength
+vendor\gopkg.in\yaml.v3\scannerc.go:2674:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2691:6: don't use underscores in Go names; func yaml_parser_scan_plain_scalar should be yamlParserScanPlainScalar
+vendor\gopkg.in\yaml.v3\scannerc.go:2693:9: don't use underscores in Go names; var leading_break should be leadingBreak
+vendor\gopkg.in\yaml.v3\scannerc.go:2693:24: don't use underscores in Go names; var trailing_breaks should be trailingBreaks
+vendor\gopkg.in\yaml.v3\scannerc.go:2694:6: don't use underscores in Go names; var leading_blanks should be leadingBlanks
+vendor\gopkg.in\yaml.v3\scannerc.go:2697:2: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2698:2: don't use underscores in Go names; var end_mark should be endMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2834:6: don't use underscores in Go names; func yaml_parser_scan_line_comment should be yamlParserScanLineComment
+vendor\gopkg.in\yaml.v3\scannerc.go:2834:59: don't use underscores in Go names; func parameter token_mark should be tokenMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2839:6: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2885:6: don't use underscores in Go names; func yaml_parser_scan_comments should be yamlParserScanComments
+vendor\gopkg.in\yaml.v3\scannerc.go:2885:55: don't use underscores in Go names; func parameter scan_mark should be scanMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2892:6: don't use underscores in Go names; var token_mark should be tokenMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2893:6: don't use underscores in Go names; var start_mark should be startMark
+vendor\gopkg.in\yaml.v3\scannerc.go:2894:6: don't use underscores in Go names; var next_indent should be nextIndent
+vendor\gopkg.in\yaml.v3\scannerc.go:2899:6: don't use underscores in Go names; var recent_empty should be recentEmpty
+vendor\gopkg.in\yaml.v3\scannerc.go:2900:6: don't use underscores in Go names; var first_empty should be firstEmpty
+vendor\gopkg.in\yaml.v3\scannerc.go:2911:6: don't use underscores in Go names; var foot_line should be footLine
+vendor\gopkg.in\yaml.v3\scannerc.go:2929:7: don't use underscores in Go names; var close_flow should be closeFlow
+vendor\gopkg.in\yaml.v3\sorter.go:69:11: if block ends with a return statement, so drop this else and outdent its block
+vendor\gopkg.in\yaml.v3\writerc.go:26:6: don't use underscores in Go names; func yaml_emitter_set_writer_error should be yamlEmitterSetWriterError
+vendor\gopkg.in\yaml.v3\writerc.go:33:6: don't use underscores in Go names; func yaml_emitter_flush should be yamlEmitterFlush
+vendor\gopkg.in\yaml.v3\yaml.go:323:6: exported type Kind should have comment or be unexported
+vendor\gopkg.in\yaml.v3\yaml.go:326:2: exported const DocumentNode should have comment (or a comment on this block) or be unexported
+vendor\gopkg.in\yaml.v3\yaml.go:333:6: exported type Style should have comment or be unexported
+vendor\gopkg.in\yaml.v3\yaml.go:336:2: exported const TaggedStyle should have comment (or a comment on this block) or be unexported
+vendor\gopkg.in\yaml.v3\yaml.go:512:2: struct field Id should be ID
+vendor\gopkg.in\yaml.v3\yaml.go:568:18: should replace errors.New(fmt.Sprintf(...)) with fmt.Errorf(...)
+vendor\gopkg.in\yaml.v3\yamlh.go:31:6: don't use underscores in Go names; type yaml_version_directive_t should be yamlVersionDirectiveT
+vendor\gopkg.in\yaml.v3\yamlh.go:37:6: don't use underscores in Go names; type yaml_tag_directive_t should be yamlTagDirectiveT
+vendor\gopkg.in\yaml.v3\yamlh.go:42:6: don't use underscores in Go names; type yaml_encoding_t should be yamlEncodingT
+vendor\gopkg.in\yaml.v3\yamlh.go:47:2: don't use underscores in Go names; const yaml_ANY_ENCODING should be yamlANYENCODING
+vendor\gopkg.in\yaml.v3\yamlh.go:49:2: don't use underscores in Go names; const yaml_UTF8_ENCODING should be yamlUTF8ENCODING
+vendor\gopkg.in\yaml.v3\yamlh.go:50:2: don't use underscores in Go names; const yaml_UTF16LE_ENCODING should be yamlUTF16LEENCODING
+vendor\gopkg.in\yaml.v3\yamlh.go:51:2: don't use underscores in Go names; const yaml_UTF16BE_ENCODING should be yamlUTF16BEENCODING
+vendor\gopkg.in\yaml.v3\yamlh.go:54:6: don't use underscores in Go names; type yaml_break_t should be yamlBreakT
+vendor\gopkg.in\yaml.v3\yamlh.go:59:2: don't use underscores in Go names; const yaml_ANY_BREAK should be yamlANYBREAK
+vendor\gopkg.in\yaml.v3\yamlh.go:61:2: don't use underscores in Go names; const yaml_CR_BREAK should be yamlCRBREAK
+vendor\gopkg.in\yaml.v3\yamlh.go:62:2: don't use underscores in Go names; const yaml_LN_BREAK should be yamlLNBREAK
+vendor\gopkg.in\yaml.v3\yamlh.go:63:2: don't use underscores in Go names; const yaml_CRLN_BREAK should be yamlCRLNBREAK
+vendor\gopkg.in\yaml.v3\yamlh.go:66:6: don't use underscores in Go names; type yaml_error_type_t should be yamlErrorTypeT
+vendor\gopkg.in\yaml.v3\yamlh.go:71:2: don't use underscores in Go names; const yaml_NO_ERROR should be yamlNOERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:73:2: don't use underscores in Go names; const yaml_MEMORY_ERROR should be yamlMEMORYERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:74:2: don't use underscores in Go names; const yaml_READER_ERROR should be yamlREADERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:75:2: don't use underscores in Go names; const yaml_SCANNER_ERROR should be yamlSCANNERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:76:2: don't use underscores in Go names; const yaml_PARSER_ERROR should be yamlPARSERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:77:2: don't use underscores in Go names; const yaml_COMPOSER_ERROR should be yamlCOMPOSERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:78:2: don't use underscores in Go names; const yaml_WRITER_ERROR should be yamlWRITERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:79:2: don't use underscores in Go names; const yaml_EMITTER_ERROR should be yamlEMITTERERROR
+vendor\gopkg.in\yaml.v3\yamlh.go:83:6: don't use underscores in Go names; type yaml_mark_t should be yamlMarkT
+vendor\gopkg.in\yaml.v3\yamlh.go:91:6: don't use underscores in Go names; type yaml_style_t should be yamlStyleT
+vendor\gopkg.in\yaml.v3\yamlh.go:93:6: don't use underscores in Go names; type yaml_scalar_style_t should be yamlScalarStyleT
+vendor\gopkg.in\yaml.v3\yamlh.go:98:2: don't use underscores in Go names; const yaml_ANY_SCALAR_STYLE should be yamlANYSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:100:2: don't use underscores in Go names; const yaml_PLAIN_SCALAR_STYLE should be yamlPLAINSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:101:2: don't use underscores in Go names; const yaml_SINGLE_QUOTED_SCALAR_STYLE should be yamlSINGLEQUOTEDSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:102:2: don't use underscores in Go names; const yaml_DOUBLE_QUOTED_SCALAR_STYLE should be yamlDOUBLEQUOTEDSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:103:2: don't use underscores in Go names; const yaml_LITERAL_SCALAR_STYLE should be yamlLITERALSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:104:2: don't use underscores in Go names; const yaml_FOLDED_SCALAR_STYLE should be yamlFOLDEDSCALARSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:107:6: don't use underscores in Go names; type yaml_sequence_style_t should be yamlSequenceStyleT
+vendor\gopkg.in\yaml.v3\yamlh.go:112:2: don't use underscores in Go names; const yaml_ANY_SEQUENCE_STYLE should be yamlANYSEQUENCESTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:114:2: don't use underscores in Go names; const yaml_BLOCK_SEQUENCE_STYLE should be yamlBLOCKSEQUENCESTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:115:2: don't use underscores in Go names; const yaml_FLOW_SEQUENCE_STYLE should be yamlFLOWSEQUENCESTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:118:6: don't use underscores in Go names; type yaml_mapping_style_t should be yamlMappingStyleT
+vendor\gopkg.in\yaml.v3\yamlh.go:123:2: don't use underscores in Go names; const yaml_ANY_MAPPING_STYLE should be yamlANYMAPPINGSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:125:2: don't use underscores in Go names; const yaml_BLOCK_MAPPING_STYLE should be yamlBLOCKMAPPINGSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:126:2: don't use underscores in Go names; const yaml_FLOW_MAPPING_STYLE should be yamlFLOWMAPPINGSTYLE
+vendor\gopkg.in\yaml.v3\yamlh.go:131:6: don't use underscores in Go names; type yaml_token_type_t should be yamlTokenTypeT
+vendor\gopkg.in\yaml.v3\yamlh.go:136:2: don't use underscores in Go names; const yaml_NO_TOKEN should be yamlNOTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:138:2: don't use underscores in Go names; const yaml_STREAM_START_TOKEN should be yamlSTREAMSTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:139:2: don't use underscores in Go names; const yaml_STREAM_END_TOKEN should be yamlSTREAMENDTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:141:2: don't use underscores in Go names; const yaml_VERSION_DIRECTIVE_TOKEN should be yamlVERSIONDIRECTIVETOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:142:2: don't use underscores in Go names; const yaml_TAG_DIRECTIVE_TOKEN should be yamlTAGDIRECTIVETOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:143:2: don't use underscores in Go names; const yaml_DOCUMENT_START_TOKEN should be yamlDOCUMENTSTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:144:2: don't use underscores in Go names; const yaml_DOCUMENT_END_TOKEN should be yamlDOCUMENTENDTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:146:2: don't use underscores in Go names; const yaml_BLOCK_SEQUENCE_START_TOKEN should be yamlBLOCKSEQUENCESTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:147:2: don't use underscores in Go names; const yaml_BLOCK_MAPPING_START_TOKEN should be yamlBLOCKMAPPINGSTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:148:2: don't use underscores in Go names; const yaml_BLOCK_END_TOKEN should be yamlBLOCKENDTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:150:2: don't use underscores in Go names; const yaml_FLOW_SEQUENCE_START_TOKEN should be yamlFLOWSEQUENCESTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:151:2: don't use underscores in Go names; const yaml_FLOW_SEQUENCE_END_TOKEN should be yamlFLOWSEQUENCEENDTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:152:2: don't use underscores in Go names; const yaml_FLOW_MAPPING_START_TOKEN should be yamlFLOWMAPPINGSTARTTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:153:2: don't use underscores in Go names; const yaml_FLOW_MAPPING_END_TOKEN should be yamlFLOWMAPPINGENDTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:155:2: don't use underscores in Go names; const yaml_BLOCK_ENTRY_TOKEN should be yamlBLOCKENTRYTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:156:2: don't use underscores in Go names; const yaml_FLOW_ENTRY_TOKEN should be yamlFLOWENTRYTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:157:2: don't use underscores in Go names; const yaml_KEY_TOKEN should be yamlKEYTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:158:2: don't use underscores in Go names; const yaml_VALUE_TOKEN should be yamlVALUETOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:160:2: don't use underscores in Go names; const yaml_ALIAS_TOKEN should be yamlALIASTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:161:2: don't use underscores in Go names; const yaml_ANCHOR_TOKEN should be yamlANCHORTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:162:2: don't use underscores in Go names; const yaml_TAG_TOKEN should be yamlTAGTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:163:2: don't use underscores in Go names; const yaml_SCALAR_TOKEN should be yamlSCALARTOKEN
+vendor\gopkg.in\yaml.v3\yamlh.go:217:6: don't use underscores in Go names; type yaml_token_t should be yamlTokenT
+vendor\gopkg.in\yaml.v3\yamlh.go:222:2: don't use underscores in Go names; struct field start_mark should be startMark
+vendor\gopkg.in\yaml.v3\yamlh.go:222:14: don't use underscores in Go names; struct field end_mark should be endMark
+vendor\gopkg.in\yaml.v3\yamlh.go:246:6: don't use underscores in Go names; type yaml_event_type_t should be yamlEventTypeT
+vendor\gopkg.in\yaml.v3\yamlh.go:251:2: don't use underscores in Go names; const yaml_NO_EVENT should be yamlNOEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:253:2: don't use underscores in Go names; const yaml_STREAM_START_EVENT should be yamlSTREAMSTARTEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:254:2: don't use underscores in Go names; const yaml_STREAM_END_EVENT should be yamlSTREAMENDEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:255:2: don't use underscores in Go names; const yaml_DOCUMENT_START_EVENT should be yamlDOCUMENTSTARTEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:256:2: don't use underscores in Go names; const yaml_DOCUMENT_END_EVENT should be yamlDOCUMENTENDEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:257:2: don't use underscores in Go names; const yaml_ALIAS_EVENT should be yamlALIASEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:258:2: don't use underscores in Go names; const yaml_SCALAR_EVENT should be yamlSCALAREVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:259:2: don't use underscores in Go names; const yaml_SEQUENCE_START_EVENT should be yamlSEQUENCESTARTEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:260:2: don't use underscores in Go names; const yaml_SEQUENCE_END_EVENT should be yamlSEQUENCEENDEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:261:2: don't use underscores in Go names; const yaml_MAPPING_START_EVENT should be yamlMAPPINGSTARTEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:262:2: don't use underscores in Go names; const yaml_MAPPING_END_EVENT should be yamlMAPPINGENDEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:263:2: don't use underscores in Go names; const yaml_TAIL_COMMENT_EVENT should be yamlTAILCOMMENTEVENT
+vendor\gopkg.in\yaml.v3\yamlh.go:289:6: don't use underscores in Go names; type yaml_event_t should be yamlEventT
+vendor\gopkg.in\yaml.v3\yamlh.go:295:2: don't use underscores in Go names; struct field start_mark should be startMark
+vendor\gopkg.in\yaml.v3\yamlh.go:295:14: don't use underscores in Go names; struct field end_mark should be endMark
+vendor\gopkg.in\yaml.v3\yamlh.go:301:2: don't use underscores in Go names; struct field version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\yamlh.go:304:2: don't use underscores in Go names; struct field tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\yamlh.go:307:2: don't use underscores in Go names; struct field head_comment should be headComment
+vendor\gopkg.in\yaml.v3\yamlh.go:308:2: don't use underscores in Go names; struct field line_comment should be lineComment
+vendor\gopkg.in\yaml.v3\yamlh.go:309:2: don't use underscores in Go names; struct field foot_comment should be footComment
+vendor\gopkg.in\yaml.v3\yamlh.go:310:2: don't use underscores in Go names; struct field tail_comment should be tailComment
+vendor\gopkg.in\yaml.v3\yamlh.go:326:2: don't use underscores in Go names; struct field quoted_implicit should be quotedImplicit
+vendor\gopkg.in\yaml.v3\yamlh.go:332:24: don't use underscores in Go names; method scalar_style should be scalarStyle
+vendor\gopkg.in\yaml.v3\yamlh.go:333:24: don't use underscores in Go names; method sequence_style should be sequenceStyle
+vendor\gopkg.in\yaml.v3\yamlh.go:334:24: don't use underscores in Go names; method mapping_style should be mappingStyle
+vendor\gopkg.in\yaml.v3\yamlh.go:339:2: don't use underscores in Go names; const yaml_NULL_TAG should be yamlNULLTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:340:2: don't use underscores in Go names; const yaml_BOOL_TAG should be yamlBOOLTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:341:2: don't use underscores in Go names; const yaml_STR_TAG should be yamlSTRTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:342:2: don't use underscores in Go names; const yaml_INT_TAG should be yamlINTTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:343:2: don't use underscores in Go names; const yaml_FLOAT_TAG should be yamlFLOATTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:344:2: don't use underscores in Go names; const yaml_TIMESTAMP_TAG should be yamlTIMESTAMPTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:346:2: don't use underscores in Go names; const yaml_SEQ_TAG should be yamlSEQTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:347:2: don't use underscores in Go names; const yaml_MAP_TAG should be yamlMAPTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:350:2: don't use underscores in Go names; const yaml_BINARY_TAG should be yamlBINARYTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:351:2: don't use underscores in Go names; const yaml_MERGE_TAG should be yamlMERGETAG
+vendor\gopkg.in\yaml.v3\yamlh.go:353:2: don't use underscores in Go names; const yaml_DEFAULT_SCALAR_TAG should be yamlDEFAULTSCALARTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:354:2: don't use underscores in Go names; const yaml_DEFAULT_SEQUENCE_TAG should be yamlDEFAULTSEQUENCETAG
+vendor\gopkg.in\yaml.v3\yamlh.go:355:2: don't use underscores in Go names; const yaml_DEFAULT_MAPPING_TAG should be yamlDEFAULTMAPPINGTAG
+vendor\gopkg.in\yaml.v3\yamlh.go:358:6: don't use underscores in Go names; type yaml_node_type_t should be yamlNodeTypeT
+vendor\gopkg.in\yaml.v3\yamlh.go:363:2: don't use underscores in Go names; const yaml_NO_NODE should be yamlNONODE
+vendor\gopkg.in\yaml.v3\yamlh.go:365:2: don't use underscores in Go names; const yaml_SCALAR_NODE should be yamlSCALARNODE
+vendor\gopkg.in\yaml.v3\yamlh.go:366:2: don't use underscores in Go names; const yaml_SEQUENCE_NODE should be yamlSEQUENCENODE
+vendor\gopkg.in\yaml.v3\yamlh.go:367:2: don't use underscores in Go names; const yaml_MAPPING_NODE should be yamlMAPPINGNODE
+vendor\gopkg.in\yaml.v3\yamlh.go:371:6: don't use underscores in Go names; type yaml_node_item_t should be yamlNodeItemT
+vendor\gopkg.in\yaml.v3\yamlh.go:374:6: don't use underscores in Go names; type yaml_node_pair_t should be yamlNodePairT
+vendor\gopkg.in\yaml.v3\yamlh.go:380:6: don't use underscores in Go names; type yaml_node_t should be yamlNodeT
+vendor\gopkg.in\yaml.v3\yamlh.go:395:3: don't use underscores in Go names; struct field items_data should be itemsData
+vendor\gopkg.in\yaml.v3\yamlh.go:401:3: don't use underscores in Go names; struct field pairs_data should be pairsData
+vendor\gopkg.in\yaml.v3\yamlh.go:402:3: don't use underscores in Go names; struct field pairs_start should be pairsStart
+vendor\gopkg.in\yaml.v3\yamlh.go:403:3: don't use underscores in Go names; struct field pairs_end should be pairsEnd
+vendor\gopkg.in\yaml.v3\yamlh.go:404:3: don't use underscores in Go names; struct field pairs_top should be pairsTop
+vendor\gopkg.in\yaml.v3\yamlh.go:408:2: don't use underscores in Go names; struct field start_mark should be startMark
+vendor\gopkg.in\yaml.v3\yamlh.go:409:2: don't use underscores in Go names; struct field end_mark should be endMark
+vendor\gopkg.in\yaml.v3\yamlh.go:414:6: don't use underscores in Go names; type yaml_document_t should be yamlDocumentT
+vendor\gopkg.in\yaml.v3\yamlh.go:420:2: don't use underscores in Go names; struct field version_directive should be versionDirective
+vendor\gopkg.in\yaml.v3\yamlh.go:423:2: don't use underscores in Go names; struct field tag_directives_data should be tagDirectivesData
+vendor\gopkg.in\yaml.v3\yamlh.go:424:2: don't use underscores in Go names; struct field tag_directives_start should be tagDirectivesStart
+vendor\gopkg.in\yaml.v3\yamlh.go:425:2: don't use underscores in Go names; struct field tag_directives_end should be tagDirectivesEnd
+vendor\gopkg.in\yaml.v3\yamlh.go:427:2: don't use underscores in Go names; struct field start_implicit should be startImplicit
+vendor\gopkg.in\yaml.v3\yamlh.go:428:2: don't use underscores in Go names; struct field end_implicit should be endImplicit
+vendor\gopkg.in\yaml.v3\yamlh.go:431:2: don't use underscores in Go names; struct field start_mark should be startMark
+vendor\gopkg.in\yaml.v3\yamlh.go:431:14: don't use underscores in Go names; struct field end_mark should be endMark
+vendor\gopkg.in\yaml.v3\yamlh.go:449:6: don't use underscores in Go names; type yaml_read_handler_t should be yamlReadHandlerT
+vendor\gopkg.in\yaml.v3\yamlh.go:452:6: don't use underscores in Go names; type yaml_simple_key_t should be yamlSimpleKeyT
+vendor\gopkg.in\yaml.v3\yamlh.go:455:2: don't use underscores in Go names; struct field token_number should be tokenNumber
+vendor\gopkg.in\yaml.v3\yamlh.go:460:6: don't use underscores in Go names; type yaml_parser_state_t should be yamlParserStateT
+vendor\gopkg.in\yaml.v3\yamlh.go:463:2: don't use underscores in Go names; const yaml_PARSE_STREAM_START_STATE should be yamlPARSESTREAMSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:465:2: don't use underscores in Go names; const yaml_PARSE_IMPLICIT_DOCUMENT_START_STATE should be yamlPARSEIMPLICITDOCUMENTSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:466:2: don't use underscores in Go names; const yaml_PARSE_DOCUMENT_START_STATE should be yamlPARSEDOCUMENTSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:467:2: don't use underscores in Go names; const yaml_PARSE_DOCUMENT_CONTENT_STATE should be yamlPARSEDOCUMENTCONTENTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:468:2: don't use underscores in Go names; const yaml_PARSE_DOCUMENT_END_STATE should be yamlPARSEDOCUMENTENDSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:469:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_NODE_STATE should be yamlPARSEBLOCKNODESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:470:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_NODE_OR_INDENTLESS_SEQUENCE_STATE should be yamlPARSEBLOCKNODEORINDENTLESSSEQUENCESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:471:2: don't use underscores in Go names; const yaml_PARSE_FLOW_NODE_STATE should be yamlPARSEFLOWNODESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:472:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE should be yamlPARSEBLOCKSEQUENCEFIRSTENTRYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:473:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_SEQUENCE_ENTRY_STATE should be yamlPARSEBLOCKSEQUENCEENTRYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:474:2: don't use underscores in Go names; const yaml_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE should be yamlPARSEINDENTLESSSEQUENCEENTRYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:475:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE should be yamlPARSEBLOCKMAPPINGFIRSTKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:476:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_MAPPING_KEY_STATE should be yamlPARSEBLOCKMAPPINGKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:477:2: don't use underscores in Go names; const yaml_PARSE_BLOCK_MAPPING_VALUE_STATE should be yamlPARSEBLOCKMAPPINGVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:478:2: don't use underscores in Go names; const yaml_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE should be yamlPARSEFLOWSEQUENCEFIRSTENTRYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:479:2: don't use underscores in Go names; const yaml_PARSE_FLOW_SEQUENCE_ENTRY_STATE should be yamlPARSEFLOWSEQUENCEENTRYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:480:2: don't use underscores in Go names; const yaml_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE should be yamlPARSEFLOWSEQUENCEENTRYMAPPINGKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:481:2: don't use underscores in Go names; const yaml_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE should be yamlPARSEFLOWSEQUENCEENTRYMAPPINGVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:482:2: don't use underscores in Go names; const yaml_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_END_STATE should be yamlPARSEFLOWSEQUENCEENTRYMAPPINGENDSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:483:2: don't use underscores in Go names; const yaml_PARSE_FLOW_MAPPING_FIRST_KEY_STATE should be yamlPARSEFLOWMAPPINGFIRSTKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:484:2: don't use underscores in Go names; const yaml_PARSE_FLOW_MAPPING_KEY_STATE should be yamlPARSEFLOWMAPPINGKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:485:2: don't use underscores in Go names; const yaml_PARSE_FLOW_MAPPING_VALUE_STATE should be yamlPARSEFLOWMAPPINGVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:486:2: don't use underscores in Go names; const yaml_PARSE_FLOW_MAPPING_EMPTY_VALUE_STATE should be yamlPARSEFLOWMAPPINGEMPTYVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:487:2: don't use underscores in Go names; const yaml_PARSE_END_STATE should be yamlPARSEENDSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:545:6: don't use underscores in Go names; type yaml_alias_data_t should be yamlAliasDataT
+vendor\gopkg.in\yaml.v3\yamlh.go:555:6: don't use underscores in Go names; type yaml_parser_t should be yamlParserT
+vendor\gopkg.in\yaml.v3\yamlh.go:564:2: don't use underscores in Go names; struct field problem_offset should be problemOffset
+vendor\gopkg.in\yaml.v3\yamlh.go:565:2: don't use underscores in Go names; struct field problem_value should be problemValue
+vendor\gopkg.in\yaml.v3\yamlh.go:566:2: don't use underscores in Go names; struct field problem_mark should be problemMark
+vendor\gopkg.in\yaml.v3\yamlh.go:570:2: don't use underscores in Go names; struct field context_mark should be contextMark
+vendor\gopkg.in\yaml.v3\yamlh.go:574:2: don't use underscores in Go names; struct field read_handler should be readHandler
+vendor\gopkg.in\yaml.v3\yamlh.go:576:2: don't use underscores in Go names; struct field input_reader should be inputReader
+vendor\gopkg.in\yaml.v3\yamlh.go:578:2: don't use underscores in Go names; struct field input_pos should be inputPos
+vendor\gopkg.in\yaml.v3\yamlh.go:583:2: don't use underscores in Go names; struct field buffer_pos should be bufferPos
+vendor\gopkg.in\yaml.v3\yamlh.go:589:2: don't use underscores in Go names; struct field raw_buffer should be rawBuffer
+vendor\gopkg.in\yaml.v3\yamlh.go:590:2: don't use underscores in Go names; struct field raw_buffer_pos should be rawBufferPos
+vendor\gopkg.in\yaml.v3\yamlh.go:599:2: don't use underscores in Go names; struct field head_comment should be headComment
+vendor\gopkg.in\yaml.v3\yamlh.go:600:2: don't use underscores in Go names; struct field line_comment should be lineComment
+vendor\gopkg.in\yaml.v3\yamlh.go:601:2: don't use underscores in Go names; struct field foot_comment should be footComment
+vendor\gopkg.in\yaml.v3\yamlh.go:602:2: don't use underscores in Go names; struct field tail_comment should be tailComment
+vendor\gopkg.in\yaml.v3\yamlh.go:603:2: don't use underscores in Go names; struct field stem_comment should be stemComment
+vendor\gopkg.in\yaml.v3\yamlh.go:606:2: don't use underscores in Go names; struct field comments_head should be commentsHead
+vendor\gopkg.in\yaml.v3\yamlh.go:610:2: don't use underscores in Go names; struct field stream_start_produced should be streamStartProduced
+vendor\gopkg.in\yaml.v3\yamlh.go:611:2: don't use underscores in Go names; struct field stream_end_produced should be streamEndProduced
+vendor\gopkg.in\yaml.v3\yamlh.go:613:2: don't use underscores in Go names; struct field flow_level should be flowLevel
+vendor\gopkg.in\yaml.v3\yamlh.go:616:2: don't use underscores in Go names; struct field tokens_head should be tokensHead
+vendor\gopkg.in\yaml.v3\yamlh.go:617:2: don't use underscores in Go names; struct field tokens_parsed should be tokensParsed
+vendor\gopkg.in\yaml.v3\yamlh.go:618:2: don't use underscores in Go names; struct field token_available should be tokenAvailable
+vendor\gopkg.in\yaml.v3\yamlh.go:623:2: don't use underscores in Go names; struct field simple_key_allowed should be simpleKeyAllowed
+vendor\gopkg.in\yaml.v3\yamlh.go:624:2: don't use underscores in Go names; struct field simple_keys should be simpleKeys
+vendor\gopkg.in\yaml.v3\yamlh.go:625:2: don't use underscores in Go names; struct field simple_keys_by_tok should be simpleKeysByTok
+vendor\gopkg.in\yaml.v3\yamlh.go:632:2: don't use underscores in Go names; struct field tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\yamlh.go:641:6: don't use underscores in Go names; type yaml_comment_t should be yamlCommentT
+vendor\gopkg.in\yaml.v3\yamlh.go:643:2: don't use underscores in Go names; struct field scan_mark should be scanMark
+vendor\gopkg.in\yaml.v3\yamlh.go:644:2: don't use underscores in Go names; struct field token_mark should be tokenMark
+vendor\gopkg.in\yaml.v3\yamlh.go:645:2: don't use underscores in Go names; struct field start_mark should be startMark
+vendor\gopkg.in\yaml.v3\yamlh.go:646:2: don't use underscores in Go names; struct field end_mark should be endMark
+vendor\gopkg.in\yaml.v3\yamlh.go:669:6: don't use underscores in Go names; type yaml_write_handler_t should be yamlWriteHandlerT
+vendor\gopkg.in\yaml.v3\yamlh.go:671:6: don't use underscores in Go names; type yaml_emitter_state_t should be yamlEmitterStateT
+vendor\gopkg.in\yaml.v3\yamlh.go:676:2: don't use underscores in Go names; const yaml_EMIT_STREAM_START_STATE should be yamlEMITSTREAMSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:678:2: don't use underscores in Go names; const yaml_EMIT_FIRST_DOCUMENT_START_STATE should be yamlEMITFIRSTDOCUMENTSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:679:2: don't use underscores in Go names; const yaml_EMIT_DOCUMENT_START_STATE should be yamlEMITDOCUMENTSTARTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:680:2: don't use underscores in Go names; const yaml_EMIT_DOCUMENT_CONTENT_STATE should be yamlEMITDOCUMENTCONTENTSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:681:2: don't use underscores in Go names; const yaml_EMIT_DOCUMENT_END_STATE should be yamlEMITDOCUMENTENDSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:682:2: don't use underscores in Go names; const yaml_EMIT_FLOW_SEQUENCE_FIRST_ITEM_STATE should be yamlEMITFLOWSEQUENCEFIRSTITEMSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:683:2: don't use underscores in Go names; const yaml_EMIT_FLOW_SEQUENCE_TRAIL_ITEM_STATE should be yamlEMITFLOWSEQUENCETRAILITEMSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:684:2: don't use underscores in Go names; const yaml_EMIT_FLOW_SEQUENCE_ITEM_STATE should be yamlEMITFLOWSEQUENCEITEMSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:685:2: don't use underscores in Go names; const yaml_EMIT_FLOW_MAPPING_FIRST_KEY_STATE should be yamlEMITFLOWMAPPINGFIRSTKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:686:2: don't use underscores in Go names; const yaml_EMIT_FLOW_MAPPING_TRAIL_KEY_STATE should be yamlEMITFLOWMAPPINGTRAILKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:687:2: don't use underscores in Go names; const yaml_EMIT_FLOW_MAPPING_KEY_STATE should be yamlEMITFLOWMAPPINGKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:688:2: don't use underscores in Go names; const yaml_EMIT_FLOW_MAPPING_SIMPLE_VALUE_STATE should be yamlEMITFLOWMAPPINGSIMPLEVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:689:2: don't use underscores in Go names; const yaml_EMIT_FLOW_MAPPING_VALUE_STATE should be yamlEMITFLOWMAPPINGVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:690:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_SEQUENCE_FIRST_ITEM_STATE should be yamlEMITBLOCKSEQUENCEFIRSTITEMSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:691:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_SEQUENCE_ITEM_STATE should be yamlEMITBLOCKSEQUENCEITEMSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:692:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_MAPPING_FIRST_KEY_STATE should be yamlEMITBLOCKMAPPINGFIRSTKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:693:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_MAPPING_KEY_STATE should be yamlEMITBLOCKMAPPINGKEYSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:694:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_MAPPING_SIMPLE_VALUE_STATE should be yamlEMITBLOCKMAPPINGSIMPLEVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:695:2: don't use underscores in Go names; const yaml_EMIT_BLOCK_MAPPING_VALUE_STATE should be yamlEMITBLOCKMAPPINGVALUESTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:696:2: don't use underscores in Go names; const yaml_EMIT_END_STATE should be yamlEMITENDSTATE
+vendor\gopkg.in\yaml.v3\yamlh.go:703:6: don't use underscores in Go names; type yaml_emitter_t should be yamlEmitterT
+vendor\gopkg.in\yaml.v3\yamlh.go:712:2: don't use underscores in Go names; struct field write_handler should be writeHandler
+vendor\gopkg.in\yaml.v3\yamlh.go:714:2: don't use underscores in Go names; struct field output_buffer should be outputBuffer
+vendor\gopkg.in\yaml.v3\yamlh.go:715:2: don't use underscores in Go names; struct field output_writer should be outputWriter
+vendor\gopkg.in\yaml.v3\yamlh.go:718:2: don't use underscores in Go names; struct field buffer_pos should be bufferPos
+vendor\gopkg.in\yaml.v3\yamlh.go:720:2: don't use underscores in Go names; struct field raw_buffer should be rawBuffer
+vendor\gopkg.in\yaml.v3\yamlh.go:721:2: don't use underscores in Go names; struct field raw_buffer_pos should be rawBufferPos
+vendor\gopkg.in\yaml.v3\yamlh.go:728:2: don't use underscores in Go names; struct field best_indent should be bestIndent
+vendor\gopkg.in\yaml.v3\yamlh.go:729:2: don't use underscores in Go names; struct field best_width should be bestWidth
+vendor\gopkg.in\yaml.v3\yamlh.go:731:2: don't use underscores in Go names; struct field line_break should be lineBreak
+vendor\gopkg.in\yaml.v3\yamlh.go:737:2: don't use underscores in Go names; struct field events_head should be eventsHead
+vendor\gopkg.in\yaml.v3\yamlh.go:741:2: don't use underscores in Go names; struct field tag_directives should be tagDirectives
+vendor\gopkg.in\yaml.v3\yamlh.go:745:2: don't use underscores in Go names; struct field flow_level should be flowLevel
+vendor\gopkg.in\yaml.v3\yamlh.go:747:2: don't use underscores in Go names; struct field root_context should be rootContext
+vendor\gopkg.in\yaml.v3\yamlh.go:748:2: don't use underscores in Go names; struct field sequence_context should be sequenceContext
+vendor\gopkg.in\yaml.v3\yamlh.go:749:2: don't use underscores in Go names; struct field mapping_context should be mappingContext
+vendor\gopkg.in\yaml.v3\yamlh.go:750:2: don't use underscores in Go names; struct field simple_key_context should be simpleKeyContext
+vendor\gopkg.in\yaml.v3\yamlh.go:756:2: don't use underscores in Go names; struct field open_ended should be openEnded
+vendor\gopkg.in\yaml.v3\yamlh.go:758:2: don't use underscores in Go names; struct field space_above should be spaceAbove
+vendor\gopkg.in\yaml.v3\yamlh.go:759:2: don't use underscores in Go names; struct field foot_indent should be footIndent
+vendor\gopkg.in\yaml.v3\yamlh.go:762:2: don't use underscores in Go names; struct field anchor_data should be anchorData
+vendor\gopkg.in\yaml.v3\yamlh.go:768:2: don't use underscores in Go names; struct field tag_data should be tagData
+vendor\gopkg.in\yaml.v3\yamlh.go:774:2: don't use underscores in Go names; struct field scalar_data should be scalarData
+vendor\gopkg.in\yaml.v3\yamlh.go:777:3: don't use underscores in Go names; struct field flow_plain_allowed should be flowPlainAllowed
+vendor\gopkg.in\yaml.v3\yamlh.go:778:3: don't use underscores in Go names; struct field block_plain_allowed should be blockPlainAllowed
+vendor\gopkg.in\yaml.v3\yamlh.go:779:3: don't use underscores in Go names; struct field single_quoted_allowed should be singleQuotedAllowed
+vendor\gopkg.in\yaml.v3\yamlh.go:780:3: don't use underscores in Go names; struct field block_allowed should be blockAllowed
+vendor\gopkg.in\yaml.v3\yamlh.go:785:2: don't use underscores in Go names; struct field head_comment should be headComment
+vendor\gopkg.in\yaml.v3\yamlh.go:786:2: don't use underscores in Go names; struct field line_comment should be lineComment
+vendor\gopkg.in\yaml.v3\yamlh.go:787:2: don't use underscores in Go names; struct field foot_comment should be footComment
+vendor\gopkg.in\yaml.v3\yamlh.go:788:2: don't use underscores in Go names; struct field tail_comment should be tailComment
+vendor\gopkg.in\yaml.v3\yamlh.go:790:2: don't use underscores in Go names; struct field key_line_comment should be keyLineComment
+vendor\gopkg.in\yaml.v3\yamlh.go:804:2: don't use underscores in Go names; struct field last_anchor_id should be lastAnchorID
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:27:2: don't use underscores in Go names; const input_raw_buffer_size should be inputRawBufferSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:31:2: don't use underscores in Go names; const input_buffer_size should be inputBufferSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:34:2: don't use underscores in Go names; const output_buffer_size should be outputBufferSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:38:2: don't use underscores in Go names; const output_raw_buffer_size should be outputRawBufferSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:41:2: don't use underscores in Go names; const initial_stack_size should be initialStackSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:42:2: don't use underscores in Go names; const initial_queue_size should be initialQueueSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:43:2: don't use underscores in Go names; const initial_string_size should be initialStringSize
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:48:6: don't use underscores in Go names; func is_alpha should be isAlpha
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:53:6: don't use underscores in Go names; func is_digit should be isDigit
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:58:6: don't use underscores in Go names; func as_digit should be asDigit
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:63:6: don't use underscores in Go names; func is_hex should be isHex
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:68:6: don't use underscores in Go names; func as_hex should be asHex
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:80:6: don't use underscores in Go names; func is_ascii should be isASCII
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:85:6: don't use underscores in Go names; func is_printable should be isPrintable
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:98:6: don't use underscores in Go names; func is_z should be isZ
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:103:6: don't use underscores in Go names; func is_bom should be isBom
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:108:6: don't use underscores in Go names; func is_space should be isSpace
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:113:6: don't use underscores in Go names; func is_tab should be isTab
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:118:6: don't use underscores in Go names; func is_blank should be isBlank
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:124:6: don't use underscores in Go names; func is_break should be isBreak
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:132:6: don't use underscores in Go names; func is_crlf should be isCrlf
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:137:6: don't use underscores in Go names; func is_breakz should be isBreakz
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:151:6: don't use underscores in Go names; func is_spacez should be isSpacez
+vendor\gopkg.in\yaml.v3\yamlprivateh.go:166:6: don't use underscores in Go names; func is_blankz should be isBlankz

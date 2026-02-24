@@ -6,14 +6,21 @@ import (
 	"testing"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+<<<<<<< HEAD
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+=======
+>>>>>>> origin/main
 )
 
 type addLayerForSummary struct {
 	v      float64
 	params []*graph.Node
 }
+
+func (l *addLayerForSummary) Train() {}
+func (l *addLayerForSummary) Eval()  {}
 
 func (a *addLayerForSummary) Forward(x *graph.Node) *graph.Node {
 	in := x.Value
