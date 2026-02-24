@@ -64,7 +64,6 @@ func main() {
 	// Training loop (epochs)
 	for epoch := 0; epoch < epochs; epoch++ {
 		loader.Reset()
-		engine := autograd.NewEngine()
 		acc := metrics.NewAccuracy()
 
 		var epochLoss float64
@@ -73,16 +72,20 @@ func main() {
 		for loader.HasNext() {
 			batch := loader.Next()
 
+			ctx := autograd.NewGraph()
+			ctx.WithGrad()
+			autograd.SetGraph(ctx)
+
 			xNode := graph.NewNode(batch.Features, nil, nil)
 
 			// Forward
 			logits := model.Forward(xNode)
 
 			// Loss
-			loss := engine.SoftmaxCrossEntropy(logits, batch.Targets)
+			loss := ctx.Engine().SoftmaxCrossEntropy(logits, batch.Targets)
 
-			// Backward + update
-			engine.Backward(loss)
+			// Backward + update (освобождает GraphContext)
+			ctx.Backward(loss)
 			optimizer.Step(model.Params())
 			optimizer.ZeroGrad(model.Params())
 
