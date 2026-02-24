@@ -8,10 +8,7 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-<<<<<<< HEAD
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
-=======
->>>>>>> origin/main
 )
 
 type addLayerForSummary struct {

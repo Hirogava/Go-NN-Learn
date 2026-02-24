@@ -5,7 +5,6 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/ops"
 )
 
 type Engine struct {
@@ -18,23 +17,11 @@ func NewEngine() *Engine {
 	}
 }
 
-<<<<<<< HEAD
 func (e *Engine) Backward(finalNode *graph.Node) {
 	finalNode.Grad = tensor.Ones(finalNode.Value.Shape...)
 
 	sortedNodes := e.topologicalSort(finalNode)
 
-=======
-// Backward выполняет обратное распространение по всему графу
-func (e *Engine) Backward(finalNode *graph.Node) {
-	// Инициализировать градиент конечного узла единицами той же формы
-	finalNode.Grad = tensor.Ones(finalNode.Value.Shape...)
-
-	// Выполнить топологическую сортировку узлов
-	sortedNodes := e.topologicalSort(finalNode)
-
-	// Выполнить обратное распространение в обратном порядке
->>>>>>> origin/main
 	for i := len(sortedNodes) - 1; i >= 0; i-- {
 		node := sortedNodes[i]
 		if node.Operation != nil {
@@ -43,10 +30,6 @@ func (e *Engine) Backward(finalNode *graph.Node) {
 	}
 }
 
-<<<<<<< HEAD
-=======
-// Топологическая сортировка узлов от finalNode
->>>>>>> origin/main
 func (e *Engine) topologicalSort(root *graph.Node) []*graph.Node {
 	visited := make(map[*graph.Node]bool)
 	stack := make([]*graph.Node, 0)
@@ -58,18 +41,10 @@ func (e *Engine) topologicalSort(root *graph.Node) []*graph.Node {
 		}
 		visited[node] = true
 
-<<<<<<< HEAD
-=======
-		// Сначала посещаем всех родителей
->>>>>>> origin/main
 		for _, parent := range node.Parents {
 			dfs(parent)
 		}
 
-<<<<<<< HEAD
-=======
-		// Затем добавляем текущий узел в стек
->>>>>>> origin/main
 		stack = append(stack, node)
 	}
 
@@ -77,7 +52,6 @@ func (e *Engine) topologicalSort(root *graph.Node) []*graph.Node {
 	return stack
 }
 
-<<<<<<< HEAD
 // backwardOp adapts any Backward func to the graph.Operation interface.
 type backwardOp struct {
 	backwardFn func(*tensor.Tensor)
@@ -88,11 +62,6 @@ func (b *backwardOp) Backward(grad *tensor.Tensor)              { b.backwardFn(g
 
 func (e *Engine) RequireGrad(t *tensor.Tensor) *graph.Node {
 	node := graph.NewNode(t, nil, nil)
-=======
-// RequireGrad оборачивает тензор в узел, включаемый в граф
-func (e *Engine) RequireGrad(t *tensor.Tensor) *graph.Node {
-	node := graph.NewNode(t, nil, nil) // листовой узел без родителей и операций
->>>>>>> origin/main
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -124,11 +93,7 @@ func (op *ReLUOp) Forward() *tensor.Tensor {
 func (e *Engine) ReLU(input *graph.Node) *graph.Node {
 	op := NewReLUOp(input)
 	result := op.Forward()
-<<<<<<< HEAD
 	node := graph.NewNode(result, []*graph.Node{input}, &backwardOp{op.Backward})
-=======
-	node := graph.NewNode(result, []*graph.Node{input}, op)
->>>>>>> origin/main
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -167,11 +132,7 @@ func (op *SigmoidOp) Forward() *tensor.Tensor {
 func (e *Engine) Sigmoid(input *graph.Node) *graph.Node {
 	op := NewSigmoidOp(input)
 	result := op.Forward()
-<<<<<<< HEAD
 	node := graph.NewNode(result, []*graph.Node{input}, &backwardOp{op.Backward})
-=======
-	node := graph.NewNode(result, []*graph.Node{input}, op)
->>>>>>> origin/main
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -209,11 +170,7 @@ func (op *TanhOp) Forward() *tensor.Tensor {
 func (e *Engine) Tanh(input *graph.Node) *graph.Node {
 	op := NewTanhOp(input)
 	result := op.Forward()
-<<<<<<< HEAD
 	node := graph.NewNode(result, []*graph.Node{input}, &backwardOp{op.Backward})
-=======
-	node := graph.NewNode(result, []*graph.Node{input}, op)
->>>>>>> origin/main
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
@@ -246,7 +203,6 @@ func (op *SoftmaxCrossEntropyOp) Forward() *tensor.Tensor {
 		panic("Input and target must be 2D tensors with matching batch sizes")
 	}
 
-<<<<<<< HEAD
 	maxVal := tensor.Max(op.input.Value).Data[0]
 
 	rows, cols := op.input.Value.Shape[0], op.input.Value.Shape[1]
@@ -259,28 +215,16 @@ func (op *SoftmaxCrossEntropyOp) Forward() *tensor.Tensor {
 		}
 	}
 
-=======
-	maxVal := ops.Max(op.input.Value)
-	shifted := ops.Sub(op.input.Value, maxVal)
-	exp := tensor.Exp(shifted)
-
-	rows, cols := op.input.Value.Shape[0], op.input.Value.Shape[1]
->>>>>>> origin/main
 	sumExp := tensor.Zeros(rows)
 	for i := 0; i < rows; i++ {
 		sum := 0.0
 		for j := 0; j < cols; j++ {
-<<<<<<< HEAD
 			idx := i*exp.Strides[0] + j*exp.Strides[1]
-=======
-			idx := i*op.input.Value.Strides[0] + j*op.input.Value.Strides[1]
->>>>>>> origin/main
 			sum += exp.Data[idx]
 		}
 		sumExp.Data[i] = sum
 	}
 
-<<<<<<< HEAD
 	softmax := tensor.Zeros(rows, cols)
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
@@ -288,9 +232,6 @@ func (op *SoftmaxCrossEntropyOp) Forward() *tensor.Tensor {
 			softmax.Data[idx] = exp.Data[idx] / sumExp.Data[i]
 		}
 	}
-=======
-	softmax := ops.Div(exp, sumExp)
->>>>>>> origin/main
 	op.softmax = softmax
 
 	loss := tensor.Zeros(rows, 1)
@@ -310,11 +251,7 @@ func (op *SoftmaxCrossEntropyOp) Forward() *tensor.Tensor {
 func (e *Engine) SoftmaxCrossEntropy(input *graph.Node, target *tensor.Tensor) *graph.Node {
 	op := NewSoftmaxCrossEntropyOp(input, target)
 	result := op.Forward()
-<<<<<<< HEAD
 	node := graph.NewNode(result, []*graph.Node{input}, &backwardOp{op.Backward})
-=======
-	node := graph.NewNode(result, []*graph.Node{input}, op)
->>>>>>> origin/main
 	e.Nodes = append(e.Nodes, node)
 	return node
 }

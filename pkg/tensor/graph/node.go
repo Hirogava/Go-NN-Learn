@@ -37,38 +37,5 @@ func (n *Node) IsLeaf() bool {
 }
 
 func (n *Node) ZeroGrad() {
-<<<<<<< HEAD
 	n.Grad = n.Value.ZeroGrad()
-=======
-	n.Grad = tensor.Zeros(n.Value.Shape...)
-}
-
-func (n *Node) Prune() {
-	if n == nil {
-		return
-	}
-
-	visited := make(map[*Node]struct{})
-	stack := []*Node{n}
-
-	for len(stack) > 0 {
-		cur := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if _, ok := visited[cur]; ok {
-			continue
-		}
-		visited[cur] = struct{}{}
-
-		// Добавляем родителей в обход
-		for _, p := range cur.Parents {
-			stack = append(stack, p)
-		}
-
-		if n.Value == nil {
-			cur.Parents = nil
-			cur.Operation = nil
-		}
-	}
->>>>>>> origin/main
 }

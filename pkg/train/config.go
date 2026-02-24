@@ -39,6 +39,10 @@ func NewTrainerFromConfig(
 	callbacks *CallbackList,
 ) *Trainer {
 	SetGlobalSeed(cfg.Seed)
+	var cb CallbackList
+	if callbacks != nil {
+		cb = *callbacks
+	}
 	return NewTrainer(
 		model,
 		dataLoader,
@@ -46,7 +50,7 @@ func NewTrainerFromConfig(
 		lossFn,
 		lrScheduler,
 		metric,
-		callbacks,
+		cb,
 		cfg.Epochs,
 	)
 }

@@ -6,10 +6,6 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
-<<<<<<< HEAD
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
-=======
->>>>>>> origin/main
 )
 
 // BatchNormVector нормализует входящий батч (вектор), путем изменения общего среднего и дисперсии.
