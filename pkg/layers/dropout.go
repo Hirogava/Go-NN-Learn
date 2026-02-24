@@ -115,5 +115,10 @@ func (op *dropoutOp) Backward(grad *tensor.Tensor) {
 	op.x.Grad = result
 }
 
-func (d *Dropout) Train() { d.training = true }
-func (d *Dropout) Eval()  { d.training = false }
+func (d *Dropout) Train() {
+	d.training = true
+}
+
+func (d *Dropout) Eval() {
+	d.training = false
+}
