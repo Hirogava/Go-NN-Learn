@@ -8,33 +8,52 @@ import (
 // Используется для инициализации градиентов и промежуточных результатов.
 func Zeros(shape ...int) *Tensor {
 	size := calculateSize(shape)
-	data := make([]float64, size)
 	strides := calculateStrides(shape)
-	
-	return &Tensor{
-		Data:    data,
+	dtype := GetDefaultDType()
+
+	t := &Tensor{
 		Shape:   shape,
 		Strides: strides,
+		DType:   dtype,
 	}
+
+	if dtype == Float32 {
+		t.Data32 = make([]float32, size)
+	} else {
+		t.Data = make([]float64, size)
+	}
+
+	return t
 }
 
 // Ones создаёт тензор заполненный единицами с указанной формой.
 // Используется для инициализации bias и масок.
 func Ones(shape ...int) *Tensor {
 	size := calculateSize(shape)
-	data := make([]float64, size)
-	
-	for i := range data {
-		data[i] = 1.0
-	}
-	
 	strides := calculateStrides(shape)
-	
-	return &Tensor{
-		Data:    data,
+	dtype := GetDefaultDType()
+
+	t := &Tensor{
 		Shape:   shape,
 		Strides: strides,
+		DType:   dtype,
 	}
+
+	if dtype == Float32 {
+		data := make([]float32, size)
+		for i := range data {
+			data[i] = 1.0
+		}
+		t.Data32 = data
+	} else {
+		data := make([]float64, size)
+		for i := range data {
+			data[i] = 1.0
+		}
+		t.Data = data
+	}
+
+	return t
 }
 
 // Randn создаёт тензор с случайными значениями из нормального распределения N(0, 1).
@@ -42,21 +61,32 @@ func Ones(shape ...int) *Tensor {
 // Используется для инициализации весов нейронных сетей.
 func Randn(shape []int, seed int64) *Tensor {
 	size := calculateSize(shape)
-	data := make([]float64, size)
-	
-	rng := rand.New(rand.NewSource(seed))
-	
-	for i := range data {
-		data[i] = rng.NormFloat64()
-	}
-	
 	strides := calculateStrides(shape)
-	
-	return &Tensor{
-		Data:    data,
+	dtype := GetDefaultDType()
+
+	t := &Tensor{
 		Shape:   shape,
 		Strides: strides,
+		DType:   dtype,
 	}
+
+	rng := rand.New(rand.NewSource(seed))
+
+	if dtype == Float32 {
+		data := make([]float32, size)
+		for i := range data {
+			data[i] = float32(rng.NormFloat64())
+		}
+		t.Data32 = data
+	} else {
+		data := make([]float64, size)
+		for i := range data {
+			data[i] = rng.NormFloat64()
+		}
+		t.Data = data
+	}
+
+	return t
 }
 
 // calculateSize вычисляет общее количество элементов в тензоре по его форме.
@@ -76,7 +106,7 @@ func calculateStrides(shape []int) []int {
 	if len(shape) == 0 {
 		return []int{}
 	}
-	
+
 	strides := make([]int, len(shape))
 	stride := 1
 	for i := len(shape) - 1; i >= 0; i-- {
