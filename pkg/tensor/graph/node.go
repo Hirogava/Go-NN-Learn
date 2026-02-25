@@ -19,7 +19,6 @@ type Node struct {
 type BackwardFunc func(grad *tensor.Tensor)
 
 type Operation interface {
-	Forward(inputs ...*Node) *Node
 	Backward(grad *tensor.Tensor)
 }
 
