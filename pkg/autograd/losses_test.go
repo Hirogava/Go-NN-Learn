@@ -427,6 +427,42 @@ func TestHingeLossBinaryClassification(t *testing.T) {
 }
 
 // =============================================================================
+// BinaryCrossEntropy Tests
+// =============================================================================
+
+func TestBinaryCrossEntropyForward(t *testing.T) {
+	e := NewEngine()
+	// pred - вероятности (sigmoid output), target - 0 или 1
+	pred := e.RequireGrad(newTensorTest([]float64{0.9, 0.1, 0.7, 0.3}, 4))
+	target := newTensorTest([]float64{1, 0, 1, 0}, 4)
+
+	loss := e.BinaryCrossEntropy(pred, target)
+	// BCE = -mean(y*log(p) + (1-y)*log(1-p))
+	// Хорошие предсказания -> низкий loss
+	if math.IsNaN(loss.Value.Data[0]) || math.IsInf(loss.Value.Data[0], 0) {
+		t.Error("BinaryCrossEntropy produced NaN or Inf")
+	}
+	if loss.Value.Data[0] < 0 {
+		t.Errorf("BinaryCrossEntropy should be non-negative, got %v", loss.Value.Data[0])
+	}
+}
+
+func TestBinaryCrossEntropyBackward(t *testing.T) {
+	e := NewEngine()
+	pred := e.RequireGrad(newTensorTest([]float64{0.8, 0.2}, 2))
+	target := newTensorTest([]float64{1, 0}, 2)
+
+	loss := e.BinaryCrossEntropy(pred, target)
+	e.Backward(loss)
+
+	for i, g := range pred.Grad.Data {
+		if math.IsNaN(g) || math.IsInf(g, 0) {
+			t.Errorf("BinaryCrossEntropy gradient[%d] is NaN or Inf: %v", i, g)
+		}
+	}
+}
+
+// =============================================================================
 // Edge Cases and Error Handling
 // =============================================================================
 
