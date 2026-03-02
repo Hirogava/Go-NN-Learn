@@ -284,3 +284,71 @@ func (e *Engine) HingeLoss(pred *graph.Node, target *tensor.Tensor) *graph.Node 
 	e.Nodes = append(e.Nodes, node)
 	return node
 }
+
+// BinaryCrossEntropyOp — Binary Cross-Entropy для бинарной классификации.
+// Используется с Sigmoid на выходе модели.
+// Forward: Loss = -mean(y*log(p) + (1-y)*log(1-p))
+// Backward: dL/dp = (p - y) / (p*(1-p)) / n
+type BinaryCrossEntropyOp struct {
+	pred   *graph.Node
+	target *tensor.Tensor
+	n      float64
+}
+
+// NewBinaryCrossEntropyOp создает операцию BCE.
+func NewBinaryCrossEntropyOp(pred *graph.Node, target *tensor.Tensor) *BinaryCrossEntropyOp {
+	return &BinaryCrossEntropyOp{pred: pred, target: target}
+}
+
+// Forward вычисляет BCE loss.
+func (op *BinaryCrossEntropyOp) Forward() *tensor.Tensor {
+	if len(op.pred.Value.Data) != len(op.target.Data) {
+		panic("BinaryCrossEntropy: pred and target must have same size")
+	}
+	op.n = float64(len(op.pred.Value.Data))
+	const eps = 1e-15
+	sumLoss := 0.0
+	for i := range op.pred.Value.Data {
+		p := op.pred.Value.Data[i]
+		if p < eps {
+			p = eps
+		}
+		if p > 1-eps {
+			p = 1 - eps
+		}
+		y := op.target.Data[i]
+		sumLoss -= y*math.Log(p) + (1-y)*math.Log(1-p)
+	}
+	result := tensor.Zeros(1)
+	result.Data[0] = sumLoss / op.n
+	return result
+}
+
+// Backward вычисляет градиенты BCE.
+func (op *BinaryCrossEntropyOp) Backward(grad *tensor.Tensor) {
+	if op.pred.Grad == nil {
+		op.pred.Grad = tensor.Zeros(op.pred.Value.Shape...)
+	}
+	const eps = 1e-15
+	scale := grad.Data[0] / op.n
+	for i := range op.pred.Value.Data {
+		p := op.pred.Value.Data[i]
+		if p < eps {
+			p = eps
+		}
+		if p > 1-eps {
+			p = 1 - eps
+		}
+		y := op.target.Data[i]
+		op.pred.Grad.Data[i] += (p - y) / (p * (1 - p)) * scale
+	}
+}
+
+// BinaryCrossEntropy создает узел графа для BCE loss.
+func (e *Engine) BinaryCrossEntropy(pred *graph.Node, target *tensor.Tensor) *graph.Node {
+	op := NewBinaryCrossEntropyOp(pred, target)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{pred}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
