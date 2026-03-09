@@ -54,19 +54,21 @@ func main() {
 		for loader.HasNext() {
 			batch := loader.Next()
 
-			engine := autograd.NewEngine()
+			ctx := autograd.NewGraph()
+			ctx.WithGrad()
+			autograd.SetGraph(ctx)
 
 			xNode := graph.NewNode(batch.Features, nil, nil)
 
 			// forward
-			yPred := engine.MatMul(xNode, W)
+			yPred := ctx.Engine().MatMul(xNode, W)
 
 			// loss
-			lossNode := engine.MSELoss(yPred, batch.Targets)
+			lossNode := ctx.Engine().MSELoss(yPred, batch.Targets)
 			loss := lossNode.Value.Data[0]
 
-			// backward
-			engine.Backward(lossNode)
+			// backward (освобождает GraphContext)
+			ctx.Backward(lossNode)
 
 			// update
 			optimizer.Step(params)
