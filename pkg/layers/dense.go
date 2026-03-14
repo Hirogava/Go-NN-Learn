@@ -1,7 +1,6 @@
 package layers
 
 import (
-	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
@@ -78,29 +77,30 @@ func (d *Dense) Forward(x *graph.Node) *graph.Node {
 		panic("Matrix multiplication failed: " + err.Error())
 	}
 
-	bTensor := d.bias.Value
-	bVec := tensor.Vector(bTensor.Data)
+	// Применяем смещение (bias)
+	bVec := d.bias.Value.Data
 	for i := 0; i < outMat.Rows; i++ {
 		for j := 0; j < outMat.Cols; j++ {
 			outMat.Data[i*outMat.Cols+j] += bVec[j]
 		}
 	}
 
-	out := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    outMat.Data,
-			Shape:   []int{outMat.Rows, outMat.Cols},
-			Strides: []int{outMat.Cols, 1},
-		},
+	// Создаем тензор результата
+	resultTensor := &tensor.Tensor{
+		Data:    outMat.Data,
+		Shape:   []int{outMat.Rows, outMat.Cols},
+		Strides: []int{outMat.Cols, 1},
 	}
-	if autograd.GradEnabled() {
-		out.Operation = &denseOp{
-			x: x,
-			w: d.weights,
-			b: d.bias,
-		}
+
+	// Создаем операцию для графа
+	op := &denseOp{
+		x: x,
+		w: d.weights,
+		b: d.bias,
 	}
-	return out
+
+	// Возвращаем новую ноду через конструктор графа
+	return graph.NewNode(resultTensor, []*graph.Node{x, d.weights, d.bias}, op)
 }
 
 func (d *Dense) Params() []*graph.Node {

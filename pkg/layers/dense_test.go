@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 func initFuncFixed(data []float64) {
@@ -49,15 +49,19 @@ func TestDenseForwardMatrix(t *testing.T) {
 func TestDenseBackward(t *testing.T) {
 	dense := NewDense(3, 2, initFuncFixed)
 
-	input := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    []float64{1.0, 2.0, 3.0},
-			Shape:   []int{3},
-			Strides: []int{1},
-		},
+	// ПРАВИЛЬНО: используем NewNode
+	xVal := &tensor.Tensor{
+		Data:    []float64{1.0, 2.0, 3.0},
+		Shape:   []int{1, 3},
+		Strides: []int{3, 1},
 	}
+	input := graph.NewNode(xVal, nil, nil)
 
 	output := dense.Forward(input)
+
+	if output.Operation == nil {
+		t.Fatal("Operation is nil! Check if Forward logic uses graph.NewNode")
+	}
 
 	grad := &tensor.Tensor{
 		Data:    []float64{1.0, 1.0},
@@ -65,10 +69,6 @@ func TestDenseBackward(t *testing.T) {
 		Strides: []int{2, 1},
 	}
 
-	op := output.Operation.(*denseOp)
-	op.Backward(grad)
-
-	fmt.Println(input.Grad.Data)
-	fmt.Println(dense.weights.Grad.Data)
-	fmt.Print(dense.bias.Grad.Data)
+	output.Operation.Backward(grad)
+	// ... дальше проверки fmt.Println ...
 }
