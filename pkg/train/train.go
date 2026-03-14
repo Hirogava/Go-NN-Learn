@@ -8,8 +8,8 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/metrics"
 	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // Trainer - основной класс для обучения модели
@@ -30,23 +30,23 @@ type Trainer struct {
 // NewTrainer создает новый экземпляр Trainer
 func NewTrainer(
 	model layers.Module,
-	dataLoader dataloader.DataLoader,
+	dataLoader *dataloader.DataLoader,
 	opt optimizers.Optimizer,
 	lossFn autograd.LossOp,
 	lrScheduler optimizers.LearningRateScheduler,
 	metric metrics.Metric,
-	callbacks CallbackList,
+	callbacks *CallbackList,
 
 	epochNumber int,
 ) *Trainer {
 	return &Trainer{
 		model:       model,
-		dataLoader:  dataLoader,
+		dataLoader:  *dataLoader,
 		opt:         opt,
 		lossFn:      lossFn,
 		lrScheduler: lrScheduler,
 		metric:      metric,
-		callbacks:   callbacks,
+		callbacks:   *callbacks,
 		context:     *NewTrainingContext(model, epochNumber),
 	}
 }
@@ -188,3 +188,7 @@ func (t *Trainer) calculateMetrics(pred *graph.Node, labels *tensor.Tensor) erro
 	}
 	return nil
 }
+
+// func (t *Trainer) Context() *TrainingContext {
+//     return &t.context
+// }

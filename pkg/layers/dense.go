@@ -182,3 +182,9 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 		Strides: []int{1},
 	}
 }
+
+// Train переключает слой в режим обучения (no-op для Dense)
+func (d *Dense) Train() {}
+
+// Eval переключает слой в режим инференса (no-op для Dense)
+func (d *Dense) Eval() {}

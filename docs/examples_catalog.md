@@ -35,18 +35,18 @@ Go-NN-Learn/
 
 ## Основные API
 
-* `api.SaveCheckpoint(m, path)` — сохранить параметры модели в файл;
-* `api.LoadCheckpoint(m, path)` — загрузить параметры из файла;
-* `api.Predict(m, x)` — выполнить прямой проход модели;
-* `api.Eval(m, inputs, targets, metric)` — вычислить среднюю метрику на наборе данных;
-* `optimizers.NewSequential(...)` — собрать последовательную модель (Sequential).
+- `api.SaveCheckpoint(m, path)` — сохранить параметры модели в файл;
+- `api.LoadCheckpoint(m, path)` — загрузить параметры из файла;
+- `api.Predict(m, x)` — выполнить прямой проход модели;
+- `api.Eval(m, inputs, targets, metric)` — вычислить среднюю метрику на наборе данных;
+- `optimizers.NewSequential(...)` — собрать последовательную модель (Sequential).
 
 ## Примеры и туториалы
 
 Подробные руководства расположены в каталоге `docs/`:
 
-* `docs/linear_regression.md` — пошаговый пример линейной регрессии;
-* `docs/mnist.md` — подробный туториал по MNIST (загрузка, модель, обучение).
+- `docs/linear_regression.md` — пошаговый пример линейной регрессии;
+- `docs/mnist.md` — подробный туториал по MNIST (загрузка, модель, обучение).
 
 ## Checkpointing
 
@@ -64,9 +64,9 @@ Go-NN-Learn/
 
 ## Тесты и CI
 
-* Unit tests: `go test ./...`;
-* Примеры (GoDoc Example): `go test ./pkg/... -run Example -v`;
-* Benchmarks: `go test ./internal/backend -bench . -benchmem`.
+- Unit tests: `go test ./...`;
+- Примеры (GoDoc Example): `go test ./pkg/... -run Example -v`;
+- Benchmarks: `go test ./internal/backend -bench . -benchmem`.
 
 ## Контрибьютинг
 
@@ -74,7 +74,3 @@ Go-NN-Learn/
 2. Сделайте ветку для фичи/исправления;
 3. Добавьте тесты и/или примеры;
 4. Создайте PR с описанием изменений.
-
----
-
-Если хотите, могу: сгенерировать git-patch со всеми файлами документации, вставить runnable примеры в `cmd/examples` или добавить CI workflow для автоматического запуска примеров.

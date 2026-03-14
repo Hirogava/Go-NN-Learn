@@ -41,7 +41,7 @@ func NewTrainerFromConfig(
 	SetGlobalSeed(cfg.Seed)
 	return NewTrainer(
 		model,
-		dataLoader,
+		&dataLoader,
 		opt,
 		lossFn,
 		lrScheduler,
