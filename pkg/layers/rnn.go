@@ -1,10 +1,11 @@
 package layers
 
 import (
-	"fmt"
+	"math"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
+	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // RNN представляет базовый рекуррентный слой для обработки последовательных данных.
@@ -21,9 +22,9 @@ import (
 //
 // Это каркас (skeleton) - полная реализация RNN будет добавлена позже.
 type RNN struct {
-	inputSize    int
-	hiddenSize   int
-	numLayers    int
+	inputSize     int
+	hiddenSize    int
+	numLayers     int
 	bidirectional bool
 
 	// Обучаемые параметры для каждого слоя
@@ -43,7 +44,8 @@ type RNN struct {
 // initFunc используется для инициализации весов.
 //
 // Пример:
-//   rnn := NewRNN(128, 256, 1, false, heInit) // input=128, hidden=256, 1 слой, однонаправленный
+//
+//	rnn := NewRNN(128, 256, 1, false, heInit) // input=128, hidden=256, 1 слой, однонаправленный
 func NewRNN(
 	inputSize, hiddenSize, numLayers int,
 	bidirectional bool,
@@ -111,75 +113,13 @@ func NewRNN(
 	}
 
 	return &RNN{
-		inputSize:    inputSize,
-		hiddenSize:   hiddenSize,
-		numLayers:    numLayers,
+		inputSize:     inputSize,
+		hiddenSize:    hiddenSize,
+		numLayers:     numLayers,
 		bidirectional: bidirectional,
-		weights:      weights,
-		biases:       biases,
+		weights:       weights,
+		biases:        biases,
 	}
-}
-
-// Forward выполняет прямое распространение через RNN слой.
-// Вход x должен иметь форму [batch_size, sequence_length, input_size] или
-// [sequence_length, batch_size, input_size] в зависимости от реализации.
-//
-// TODO: Реализовать полную обработку последовательности с сохранением скрытого состояния.
-// Сейчас это каркас, который проверяет вход и возвращает заглушку.
-func (r *RNN) Forward(x *graph.Node) *graph.Node {
-	if x == nil || x.Value == nil {
-		panic("RNN.Forward: input is nil")
-	}
-
-	// Проверка формы входа: должна быть 3D [batch, seq_len, input_size] или [seq_len, batch, input_size]
-	if len(x.Value.Shape) != 3 {
-		panic(fmt.Sprintf("RNN expects 3D input [batch, seq_len, input_size] or [seq_len, batch, input_size], got %dD", len(x.Value.Shape)))
-	}
-
-	// Определяем формат входа (batch-first или sequence-first)
-	// Предполагаем batch-first: [batch_size, sequence_length, input_size]
-	batchSize := x.Value.Shape[0]
-	sequenceLength := x.Value.Shape[1]
-	inputSize := x.Value.Shape[2]
-
-	// Проверка соответствия размера входа
-	if inputSize != r.inputSize {
-		panic(fmt.Sprintf("RNN: input size mismatch: expected %d, got %d", r.inputSize, inputSize))
-	}
-
-	// Инициализация скрытого состояния, если ещё не инициализировано
-	if r.hiddenState == nil {
-		r.hiddenState = tensor.Zeros(batchSize, r.hiddenSize)
-	}
-
-	// TODO: Реализовать реальную обработку последовательности
-	// Алгоритм для каждого временного шага:
-	//   h_t = tanh(W_ih * x_t + b_ih + W_hh * h_{t-1} + b_hh)
-	// где:
-	//   - x_t: вход на шаге t [batch_size, input_size]
-	//   - h_{t-1}: скрытое состояние на предыдущем шаге [batch_size, hidden_size]
-	//   - h_t: новое скрытое состояние [batch_size, hidden_size]
-
-	// Временная заглушка: возвращаем тензор правильной формы
-	outputSize := batchSize * sequenceLength * r.hiddenSize
-	outputData := make([]float64, outputSize)
-	// Инициализация нулями (заглушка)
-
-	output := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    outputData,
-			Shape:   []int{batchSize, sequenceLength, r.hiddenSize},
-			Strides: []int{sequenceLength * r.hiddenSize, r.hiddenSize, 1},
-		},
-	}
-
-	// TODO: Реализовать операцию для backward pass
-	// output.Operation = &rnnOp{...}
-
-	// Временное предупреждение
-	fmt.Printf("WARNING: RNN.Forward is a skeleton - full RNN processing not implemented yet\n")
-
-	return output
 }
 
 // Params возвращает все обучаемые параметры слоя (веса и смещения всех слоёв).
@@ -226,20 +166,173 @@ func (r *RNN) IsBidirectional() bool {
 	return r.bidirectional
 }
 
-// rnnOp представляет операцию RNN для backward pass.
-// TODO: Реализовать Backward для вычисления градиентов через время (BPTT).
+// rnnOp реализует интерфейс graph.Operation для твоей RNN
 type rnnOp struct {
-	x   *graph.Node
-	rnn *RNN
+	x       *graph.Node
+	rnn     *RNN
+	hStates []*tensor.Tensor // Храним h_t для BPTT
 }
 
-func (op *rnnOp) Backward(grad *tensor.Tensor) {
-	// TODO: Реализовать обратное распространение через время (BPTT - Backpropagation Through Time)
-	// Это включает:
-	// 1. Развёртку последовательности
-	// 2. Вычисление градиентов для каждого временного шага в обратном порядке
-	// 3. Накопление градиентов по весам и смещениям
-	// 4. Вычисление градиента по входу
-	panic("RNN.Backward not implemented yet - this is a skeleton")
+// Forward выполняет проход по последовательности [batch, seq, input]
+func (r *RNN) Forward(x *graph.Node) *graph.Node {
+	batchSize := x.Value.Shape[0]
+	seqLen := x.Value.Shape[1]
+
+	hStates := make([]*tensor.Tensor, seqLen+1)
+	if r.hiddenState == nil {
+		hStates[0] = tensor.Zeros(batchSize, r.hiddenSize)
+	} else {
+		hStates[0] = r.hiddenState
+	}
+
+	// Оптимизация: транспонируем веса один раз до цикла
+	wihT, _ := matrix.Transposition(matrix.TensorToMatrix(r.weights[0].Value))
+	whhT, _ := matrix.Transposition(matrix.TensorToMatrix(r.weights[1].Value))
+
+	bih := r.biases[0].Value
+	bhh := r.biases[1].Value
+
+	outputVal := tensor.Zeros(batchSize, seqLen, r.hiddenSize)
+
+	for t := 0; t < seqLen; t++ {
+		xt := extractSlice(x.Value, t)
+		xtM := matrix.TensorToMatrix(xt)
+
+		// ih = xt * Wih^T
+		ihM, _ := matrix.MatMul(xtM, wihT)
+		ih := matrix.MatrixToTensor(ihM)
+
+		// hh = h_{t-1} * Whh^T
+		htM := matrix.TensorToMatrix(hStates[t])
+		hhM, _ := matrix.MatMul(htM, whhT)
+		hh := matrix.MatrixToTensor(hhM)
+
+		// Сложение всех компонентов
+		sum, _ := tensor.Add(ih, hh)
+		sum, _ = tensor.Add(sum, broadcastBias(bih, batchSize))
+		sum, _ = tensor.Add(sum, broadcastBias(bhh, batchSize))
+
+		// Активация
+		h_t := tensor.Apply(sum, math.Tanh)
+
+		hStates[t+1] = h_t
+		copySlice(outputVal, h_t, t)
+	}
+
+	r.hiddenState = hStates[seqLen]
+	op := &rnnOp{x: x, rnn: r, hStates: hStates}
+
+	parents := append([]*graph.Node{x}, r.weights...)
+	parents = append(parents, r.biases...)
+
+	return graph.NewNode(outputVal, parents, op)
 }
 
+// Backward реализует ручной BPTT
+func (op *rnnOp) Backward(gradOutput *tensor.Tensor) {
+	r := op.rnn
+	seqLen := op.x.Value.Shape[1]
+	batchSize := op.x.Value.Shape[0]
+
+	// Инициализируем накопители градиентов
+	dWih := tensor.Zeros(r.weights[0].Value.Shape...)
+	dWhh := tensor.Zeros(r.weights[1].Value.Shape...)
+	dbih := tensor.Zeros(r.biases[0].Value.Shape...)
+	dbhh := tensor.Zeros(r.biases[1].Value.Shape...)
+	dx := tensor.Zeros(op.x.Value.Shape...)
+
+	dhNext := tensor.Zeros(batchSize, r.hiddenSize)
+
+	// Идем назад во времени
+	for t := seqLen - 1; t >= 0; t-- {
+		stepGrad := extractSlice(gradOutput, t)
+		dh, _ := tensor.Add(stepGrad, dhNext)
+
+		// d_tanh = (1 - h^2) * dh
+		h_t := op.hStates[t+1]
+		dtanh := tensor.Apply(h_t, func(v float64) float64 { return 1.0 - v*v })
+		dtanh, _ = tensor.Mul(dtanh, dh)
+
+		// Градиенты по весам
+		dtanhM := matrix.TensorToMatrix(dtanh)
+		dtanhT, _ := matrix.Transposition(dtanhM)
+
+		xt := extractSlice(op.x.Value, t)
+		xtM := matrix.TensorToMatrix(xt)
+		localDWih, _ := matrix.MatMul(dtanhT, xtM)
+		dWih, _ = tensor.Add(dWih, matrix.MatrixToTensor(localDWih))
+
+		hPrevM := matrix.TensorToMatrix(op.hStates[t])
+		localDWhh, _ := matrix.MatMul(dtanhT, hPrevM)
+		dWhh, _ = tensor.Add(dWhh, matrix.MatrixToTensor(localDWhh))
+
+		// Смещения
+		dbih, _ = tensor.Add(dbih, sumAlongBatch(dtanh))
+		dbhh, _ = tensor.Add(dbhh, sumAlongBatch(dtanh))
+
+		// Прокидываем градиент назад: dhNext = dtanh * Whh
+		whhM := matrix.TensorToMatrix(r.weights[1].Value)
+		dhNextM, _ := matrix.MatMul(dtanhM, whhM)
+		dhNext = matrix.MatrixToTensor(dhNextM)
+
+		// Градиент по входу x_t
+		wihM := matrix.TensorToMatrix(r.weights[0].Value)
+		dxtM, _ := matrix.MatMul(dtanhM, wihM)
+		copySlice(dx, matrix.MatrixToTensor(dxtM), t)
+	}
+
+	// Пишем накопленные градиенты в ноды графа
+	accumulate(r.weights[0], dWih)
+	accumulate(r.weights[1], dWhh)
+	accumulate(r.biases[0], dbih)
+	accumulate(r.biases[1], dbhh)
+	accumulate(op.x, dx)
+}
+
+// --- Вспомогательные функции (вставь их ниже) ---
+
+func accumulate(n *graph.Node, g *tensor.Tensor) {
+	if n.Grad == nil {
+		n.Grad = tensor.Zeros(n.Value.Shape...)
+	}
+	n.Grad, _ = tensor.Add(n.Grad, g)
+}
+
+func extractSlice(t *tensor.Tensor, step int) *tensor.Tensor {
+	b, s, f := t.Shape[0], t.Shape[1], t.Shape[2]
+	res := make([]float64, b*f)
+	for i := 0; i < b; i++ {
+		srcStart := i*s*f + step*f
+		// Указываем [цель : до куда] и [источник : до куда]
+		copy(res[i*f:(i+1)*f], t.Data[srcStart:srcStart+f])
+	}
+	return &tensor.Tensor{Data: res, Shape: []int{b, f}, Strides: []int{f, 1}}
+}
+
+func copySlice(dest *tensor.Tensor, src *tensor.Tensor, step int) {
+	b, s, f := dest.Shape[0], dest.Shape[1], dest.Shape[2]
+	for i := 0; i < b; i++ {
+		destStart := i*s*f + step*f
+		copy(dest.Data[destStart:destStart+f], src.Data[i*f:(i+1)*f])
+	}
+}
+
+func sumAlongBatch(t *tensor.Tensor) *tensor.Tensor {
+	b, f := t.Shape[0], t.Shape[1]
+	res := make([]float64, f)
+	for i := 0; i < b; i++ {
+		for j := 0; j < f; j++ {
+			res[j] += t.Data[i*f+j]
+		}
+	}
+	return &tensor.Tensor{Data: res, Shape: []int{f}, Strides: []int{1}}
+}
+
+func broadcastBias(b *tensor.Tensor, batch int) *tensor.Tensor {
+	f := b.Shape[0]
+	data := make([]float64, batch*f)
+	for i := 0; i < batch; i++ {
+		copy(data[i*f:], b.Data)
+	}
+	return &tensor.Tensor{Data: data, Shape: []int{batch, f}, Strides: []int{f, 1}}
+}

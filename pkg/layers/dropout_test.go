@@ -5,29 +5,31 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 func TestDropoutForward(t *testing.T) {
 	rand.Seed(42)
 
-	input := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
-			Shape:   []int{2, 3},
-			Strides: []int{3, 1},
-		},
-	}
+	// Правильная инициализация ноды через конструктор
+	input := graph.NewNode(&tensor.Tensor{
+		Data:    []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
+		Shape:   []int{2, 3},
+		Strides: []int{3, 1},
+	}, nil, nil)
 
 	dropout := NewDropout(0.5)
-	dropout.SetTraining(true)
+	dropout.Train() // Используем метод Train()
 
 	output := dropout.Forward(input)
 
+	// Достаем маску из операции для вывода
+	op := output.Operation.(*dropoutOp)
+
 	fmt.Println("Input:", input.Value.Data)
 	fmt.Println("Output (training):", output.Value.Data)
-	fmt.Println("Mask:", dropout.mask.Data)
+	fmt.Println("Mask used:", op.mask.Data)
 
 	zeroCount := 0
 	for _, val := range output.Value.Data {
@@ -39,16 +41,14 @@ func TestDropoutForward(t *testing.T) {
 }
 
 func TestDropoutInference(t *testing.T) {
-	input := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
-			Shape:   []int{2, 3},
-			Strides: []int{3, 1},
-		},
-	}
+	input := graph.NewNode(&tensor.Tensor{
+		Data:    []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0},
+		Shape:   []int{2, 3},
+		Strides: []int{3, 1},
+	}, nil, nil)
 
 	dropout := NewDropout(0.5)
-	dropout.SetTraining(false)
+	dropout.Eval() // Режим инференса
 
 	output := dropout.Forward(input)
 
@@ -62,20 +62,17 @@ func TestDropoutInference(t *testing.T) {
 	}
 }
 
-// TestDropoutBackward проверяет обратное распространение
 func TestDropoutBackward(t *testing.T) {
 	rand.Seed(42)
 
-	input := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    []float64{1.0, 2.0, 3.0, 4.0},
-			Shape:   []int{2, 2},
-			Strides: []int{2, 1},
-		},
-	}
+	input := graph.NewNode(&tensor.Tensor{
+		Data:    []float64{1.0, 2.0, 3.0, 4.0},
+		Shape:   []int{2, 2},
+		Strides: []int{2, 1},
+	}, nil, nil)
 
 	dropout := NewDropout(0.5)
-	dropout.SetTraining(true)
+	dropout.Train()
 
 	output := dropout.Forward(input)
 
@@ -85,12 +82,17 @@ func TestDropoutBackward(t *testing.T) {
 		Strides: []int{2, 1},
 	}
 
+	// Проверяем наличие операции перед приведением
+	if output.Operation == nil {
+		t.Fatal("Operation is nil. Graph did not record the forward pass.")
+	}
+
 	op := output.Operation.(*dropoutOp)
 	op.Backward(grad)
 
 	fmt.Println("\nGradient input:", grad.Data)
-	fmt.Println("Mask:", dropout.mask.Data)
-	fmt.Println("Gradient output:", input.Grad.Data)
+	fmt.Println("Mask used:", op.mask.Data)
+	fmt.Println("Gradient output (accumulated in input):", input.Grad.Data)
 }
 
 func TestDropoutRates(t *testing.T) {
@@ -99,20 +101,19 @@ func TestDropoutRates(t *testing.T) {
 	for _, rate := range rates {
 		rand.Seed(42)
 
-		input := &graph.Node{
-			Value: &tensor.Tensor{
-				Data:    make([]float64, 1000),
-				Shape:   []int{1000},
-				Strides: []int{1},
-			},
+		data := make([]float64, 1000)
+		for i := range data {
+			data[i] = 1.0
 		}
 
-		for i := range input.Value.Data {
-			input.Value.Data[i] = 1.0
-		}
+		input := graph.NewNode(&tensor.Tensor{
+			Data:    data,
+			Shape:   []int{1000},
+			Strides: []int{1},
+		}, nil, nil)
 
 		dropout := NewDropout(rate)
-		dropout.SetTraining(true)
+		dropout.Train()
 		output := dropout.Forward(input)
 
 		zeroCount := 0
@@ -123,6 +124,6 @@ func TestDropoutRates(t *testing.T) {
 		}
 
 		actualRate := float64(zeroCount) / float64(len(output.Value.Data))
-		fmt.Printf("\nRate: %.1f, Actual dropout: %.3f\n", rate, actualRate)
+		fmt.Printf("Rate: %.1f, Actual dropout: %.3f\n", rate, actualRate)
 	}
 }

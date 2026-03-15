@@ -3,7 +3,6 @@ package layers
 import (
 	"math/rand"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
@@ -33,54 +32,48 @@ func (d *Dropout) SetTraining(training bool) {
 // Forward выполняет прямое распространение через слой Dropout
 func (d *Dropout) Forward(x *graph.Node) *graph.Node {
 	if !d.training {
-		//В режиме инференса просто возращаем
 		return x
 	}
 
-	// В режиме обучения применяем dropout
 	xTensor := x.Value
-
-	// Создаем маску dropout: 1 с вероятностью (1-rate), 0 с вероятностью rate
 	maskData := make([]float64, len(xTensor.Data))
 	keepProb := 1.0 - d.rate
+	scale := 1.0 / keepProb
 
 	for i := range maskData {
 		if rand.Float64() < keepProb {
-			// on и масштабируется
-			maskData[i] = 1.0 / keepProb
+			maskData[i] = scale
 		} else {
-			// off
 			maskData[i] = 0.0
 		}
 	}
 
-	// Сохраняем маску для backward pass
-	d.mask = &tensor.Tensor{
-		Data:    maskData,
-		Shape:   append([]int{}, xTensor.Shape...),
-		Strides: append([]int{}, xTensor.Strides...),
-	}
-
-	// Применяем маску к входным данным
 	outputData := make([]float64, len(xTensor.Data))
 	for i := range outputData {
 		outputData[i] = xTensor.Data[i] * maskData[i]
 	}
 
-	output := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    outputData,
-			Shape:   append([]int{}, xTensor.Shape...),
-			Strides: append([]int{}, xTensor.Strides...),
-		},
+	// Создаем тензор результата
+	resTensor := &tensor.Tensor{
+		Data:    outputData,
+		Shape:   append([]int{}, xTensor.Shape...),
+		Strides: append([]int{}, xTensor.Strides...),
 	}
-	if autograd.GradEnabled() {
-		output.Operation = &dropoutOp{
-			x:    x,
-			mask: d.mask,
-		}
+
+	// Маску создаем локально для операции
+	mask := &tensor.Tensor{
+		Data:    maskData,
+		Shape:   append([]int{}, xTensor.Shape...),
+		Strides: append([]int{}, xTensor.Strides...),
 	}
-	return output
+
+	op := &dropoutOp{
+		x:    x,
+		mask: mask,
+	}
+
+	// ИСПОЛЬЗУЕМ NewNode вместо ручного создания
+	return graph.NewNode(resTensor, []*graph.Node{x}, op)
 }
 
 // Параметры слоя
@@ -94,25 +87,17 @@ type dropoutOp struct {
 	mask *tensor.Tensor
 }
 
-// Обратное распространение градиента
 func (op *dropoutOp) Backward(grad *tensor.Tensor) {
+	// Используем твою логику суммирования (она верная),
+	// но убедимся, что градиент инициализирован
 	if op.x.Grad == nil {
 		op.x.Grad = tensor.Zeros(op.x.Value.Shape...)
 	}
 
-	gradData := make([]float64, len(grad.Data))
-	for i := range gradData {
-		gradData[i] = grad.Data[i] * op.mask.Data[i]
+	for i := range grad.Data {
+		// Применяем маску (масштабирование уже включено в значения маски)
+		op.x.Grad.Data[i] += grad.Data[i] * op.mask.Data[i]
 	}
-
-	gradInput := &tensor.Tensor{
-		Data:    gradData,
-		Shape:   append([]int{}, grad.Shape...),
-		Strides: append([]int{}, grad.Strides...),
-	}
-
-	result, _ := tensor.Add(op.x.Grad, gradInput)
-	op.x.Grad = result
 }
 
 func (d *Dropout) Train() {
