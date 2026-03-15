@@ -46,7 +46,7 @@ func NewTrainerFromConfig(
 		lossFn,
 		lrScheduler,
 		metric,
-		callbacks,
+		*callbacks,
 		cfg.Epochs,
 	)
 }

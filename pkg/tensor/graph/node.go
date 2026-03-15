@@ -48,7 +48,7 @@ func NewNode(value *tensor.Tensor, parents []*Node, op Operation) *Node {
 	}
 	return &Node{
 		Value:     value,
-		Grad:      tensor.Zeros(value.Shape...),
+		Grad:      value.ZeroGrad(),
 		Parents:   parents,
 		Operation: op,
 	}
