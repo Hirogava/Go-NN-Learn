@@ -1,3 +1,4 @@
+// tests/applied/model_checkpoint_roundtrip_test.go
 package applied_test
 
 import (
@@ -11,203 +12,170 @@ import (
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
-// Простая локальная обёртка ReLU, реализует layers.Layer
+const eps = 1e-9
+
+// deterministic weight init
+func initWeights(seed float64) func([]float64) {
+	return func(w []float64) {
+		for i := range w {
+			w[i] = seed + float64(i)*0.001
+		}
+	}
+}
+
+// minimal ReLU layer wrapper (stateless)
 type reluLayer struct{}
 
 func (r *reluLayer) Forward(x *graph.Node) *graph.Node {
-	// В библиотеке есть autograd.Engine.ReLU, но для forward достаточно сделать
-	// элементный ReLU над x.Value (без графа), чтобы получить детерминированный output.
 	in := x.Value
-	outData := make([]float64, len(in.Data))
+	out := make([]float64, len(in.Data))
 	for i, v := range in.Data {
 		if v > 0 {
-			outData[i] = v
+			out[i] = v
 		} else {
-			outData[i] = 0
+			out[i] = 0
 		}
 	}
-	out := &graph.Node{
+	return &graph.Node{
 		Value: &tensor.Tensor{
-			Data:    outData,
-			Shape:   append([]int(nil), in.Shape...),
-			Strides: append([]int(nil), in.Strides...),
+			Data:  out,
+			Shape: append([]int(nil), in.Shape...),
 		},
 	}
-	return out
 }
-func (r *reluLayer) Params() []*graph.Node            { return []*graph.Node{} }
-func (r *reluLayer) Train()                            {}
-func (r *reluLayer) Eval()                             {}
-// Конструктор простой MLP: Dense(in, h) -> ReLU -> Dense(h, out)
-type simpleMLP struct {
+func (r *reluLayer) Params() []*graph.Node { return nil }
+func (r *reluLayer) Train()                {}
+func (r *reluLayer) Eval()                 {}
+
+// simple MLP: Dense -> ReLU -> Dense
+type simpleModel struct {
 	l1 *layers.Dense
 	r  *reluLayer
 	l2 *layers.Dense
 }
 
-func newSimpleMLP(in, h, out int, init func([]float64)) *simpleMLP {
-	return &simpleMLP{
-		l1: layers.NewDense(in, h, init),
+func newModel(init func([]float64)) *simpleModel {
+	return &simpleModel{
+		l1: layers.NewDense(4, 8, init),
 		r:  &reluLayer{},
-		l2: layers.NewDense(h, out, init),
+		l2: layers.NewDense(8, 1, init),
 	}
 }
 
-// layers.Module interface
-func (m *simpleMLP) Layers() []layers.Layer {
+func (m *simpleModel) Layers() []layers.Layer {
 	return []layers.Layer{m.l1, m.r, m.l2}
 }
-func (m *simpleMLP) Forward(x *graph.Node) *graph.Node {
-	x1 := m.l1.Forward(x)
-	x2 := m.r.Forward(x1)
-	x3 := m.l2.Forward(x2)
-	return x3
-}
-func (m *simpleMLP) Params() []*graph.Node {
-	// порядок важен — SaveCheckpoint/LoadCheckpoint сохраняют параметры
-	// в порядке, который возвращает Params()
+
+func (m *simpleModel) Params() []*graph.Node {
 	p := []*graph.Node{}
 	p = append(p, m.l1.Params()...)
 	p = append(p, m.l2.Params()...)
 	return p
 }
-func (m *simpleMLP) Train() { for _, l := range m.Layers() { l.Train() } }
-func (m *simpleMLP) Eval()  { for _, l := range m.Layers() { l.Eval() } }
+
+func (m *simpleModel) Train() {}
+func (m *simpleModel) Eval()  {}
+
+func (m *simpleModel) Forward(x *graph.Node) *graph.Node {
+	x1 := m.l1.Forward(x)
+	x2 := m.r.Forward(x1)
+	x3 := m.l2.Forward(x2)
+	return x3
+}
 
 func TestModelCheckpointRoundtrip(t *testing.T) {
-	// детерминированная инициализация: заполняем данные последовательностью,
-	// чтобы при повторной инициализации (с другой функцией) было другое содержимое
-	initSeq := func(seedOffset int64) func([]float64) {
-		return func(dst []float64) {
-			for i := range dst {
-				// простая запоминаемая последовательность (не rand), чтобы быть детерминированным
-				dst[i] = float64((i+int(seedOffset))%1000)/1000.0 + float64(seedOffset)*1e-6
-			}
-		}
+	t.Log("=== Начало теста: проверка roundtrip чекпойнта ===")
+	t.Log("=== Start test: model checkpoint roundtrip ===")
+
+	// 1) создаём и инициализируем модель A
+	modelA := newModel(initWeights(0.1))
+	t.Log("Модель A создана и инициализирована детерминированно / Model A created and deterministically initialized")
+
+	// 2) фиксированный батч входов (например реальные фичи)
+	xData := []float64{
+		0.2, 0.1, 0.4, 0.7,
+		0.3, 0.5, 0.9, 0.2,
+		0.8, 0.2, 0.3, 0.1,
 	}
-
-	inDim := 4
-	hidden := 7
-	outDim := 3
-	batchSize := 5
-
-	// модель A (инициализация A)
-	modelA := newSimpleMLP(inDim, hidden, outDim, initSeq(1))
-	// модель B (инициализация B — отличная от A)
-	modelB := newSimpleMLP(inDim, hidden, outDim, initSeq(9999))
-
-	// создаём фиксированный входной батч (детерминированный)
-	featSize := batchSize * inDim
-	featData := make([]float64, featSize)
-	for i := 0; i < featSize; i++ {
-		featData[i] = float64((i*37+13)%1000) / 1000.0
+	x := &tensor.Tensor{
+		Data:  xData,
+		Shape: []int{3, 4}, // batch 3, dim 4
 	}
-	featTensor := &tensor.Tensor{
-		Data:    featData,
-		Shape:   []int{batchSize, inDim},
-		Strides: []int{inDim, 1},
-	}
-	inputNode := graph.NewNode(featTensor, nil, nil)
+	input := graph.NewNode(x, nil, nil)
+	t.Log("Формирован фиксированный входной батч / Fixed input batch prepared")
 
-	// forward через modelA
-	outA := modelA.Forward(inputNode)
+	// 3) forward через модель A
+	outA := modelA.Forward(input)
 	if outA == nil || outA.Value == nil {
-		t.Fatalf("modelA forward returned nil")
+		t.Fatalf("Ошибка: modelA.Forward вернул nil / Error: modelA.Forward returned nil")
 	}
-	predsA := append([]float64(nil), outA.Value.Data...) // копия
+	predA := append([]float64(nil), outA.Value.Data...) // копия
+	t.Logf("Предсказания до сохранения: %v / Predictions before save: %v", predA, predA)
 
-	// Сохраняем checkpoint модели A во временный файл
-	tmpDir, err := os.MkdirTemp("", "ckpt_test")
+	// 4) сохраняем checkpoint
+	tmpDir, err := os.MkdirTemp("", "checkpoint_test")
 	if err != nil {
-		t.Fatalf("mkdir temp: %v", err)
+		t.Fatalf("Не удалось создать временную директорию: %v / Failed to create temp dir: %v", err, err)
 	}
 	defer os.RemoveAll(tmpDir)
-	ckptPath := filepath.Join(tmpDir, "modelA.ckpt")
 
+	ckptPath := filepath.Join(tmpDir, "model.ckpt")
 	if err := api.SaveCheckpoint(modelA, ckptPath); err != nil {
-		t.Fatalf("SaveCheckpoint failed: %v", err)
+		t.Fatalf("SaveCheckpoint завершился с ошибкой: %v / SaveCheckpoint failed: %v", err, err)
 	}
+	t.Logf("Чекпойнт сохранён: %s / Checkpoint saved: %s", ckptPath, ckptPath)
 
-	// Убедимся, что модельB стартово отличается от modelA (параметры)
-	paramsA := modelA.Params()
-	paramsB := modelB.Params()
-	if len(paramsA) != len(paramsB) {
-		t.Fatalf("params count mismatch before load: A=%d B=%d", len(paramsA), len(paramsB))
-	}
-	someEqual := true
-	for i := range paramsA {
-		// если хотя бы один параметр совпадает полностью — ок, но хотим заметить отличие:
-		if len(paramsA[i].Value.Data) != len(paramsB[i].Value.Data) {
-			t.Fatalf("param %d size mismatch", i)
-		}
-		eq := true
-		for j := range paramsA[i].Value.Data {
-			if paramsA[i].Value.Data[j] != paramsB[i].Value.Data[j] {
-				eq = false
-				break
-			}
-		}
-		if eq {
-			// если ровно равны — отмечаем (но не фатально)
-			// возможно при такой инициализации несколько параметров совпали случайно
-		} else {
-			someEqual = false
-		}
-	}
-	// (не фатальная проверка) если все параметры совпали — это необычно
-	if someEqual {
-		// не аварийно, просто лог
-		t.Logf("note: at least one param differs between A and B (expected)")
-	}
+	// 5) создаём новую модель B (как после перезапуска сервиса) с другой инициализацией
+	modelB := newModel(initWeights(99.0))
+	t.Log("Модель B (новая инстанция) создана с отличной инициализацией / Model B (new instance) created with different init")
 
-	// Загружаем чекпоинт в модельB
+	// 6) загружаем checkpoint в модель B
 	if err := api.LoadCheckpoint(modelB, ckptPath); err != nil {
-		t.Fatalf("LoadCheckpoint failed: %v", err)
+		t.Fatalf("LoadCheckpoint завершился с ошибкой: %v / LoadCheckpoint failed: %v", err, err)
+	}
+	t.Log("Чекпойнт загружен в модель B / Checkpoint loaded into Model B")
+
+	// 7) сравниваем параметры A и B
+	pA := modelA.Params()
+	pB := modelB.Params()
+	if len(pA) != len(pB) {
+		t.Fatalf("Количество параметров не совпадает: %d vs %d / Param count mismatch: %d vs %d", len(pA), len(pB), len(pA), len(pB))
 	}
 
-	// Теперь параметры A и B должны совпадать в пределах eps
-	const eps = 1e-9
-	for i := range paramsA {
-		a := paramsA[i].Value.Data
-		b := paramsB[i].Value.Data
+	for i := range pA {
+		a := pA[i].Value.Data
+		b := pB[i].Value.Data
 		if len(a) != len(b) {
-			t.Fatalf("param %d len mismatch after load: %d vs %d", i, len(a), len(b))
+			t.Fatalf("Размер параметра %d не совпадает: %d vs %d / Param %d length mismatch: %d vs %d", i, len(a), len(b), i, len(a), len(b))
 		}
 		for j := range a {
 			diff := a[j] - b[j]
-			if diff < 0 {
-				if -diff > eps {
-					t.Fatalf("param %d element %d mismatch: a=%v b=%v (diff=%.12f)", i, j, a[j], b[j], diff)
-				}
-			} else {
-				if diff > eps {
-					t.Fatalf("param %d element %d mismatch: a=%v b=%v (diff=%.12f)", i, j, a[j], b[j], diff)
-				}
+			if diff < -eps || diff > eps {
+				t.Fatalf("Параметр несовпадает: слой %d индекс %d (diff=%.12f) / Param mismatch: layer %d index %d (diff=%.12f)", i, j, diff, i, j, diff)
 			}
 		}
 	}
+	t.Log("Параметры модели после загрузки совпадают с исходными / Model parameters after load match the originals")
 
-	// Forward через modelB (после загрузки)
-	outB := modelB.Forward(graph.NewNode(featTensor, nil, nil))
+	// 8) проверяем предсказания после загрузки
+	outB := modelB.Forward(graph.NewNode(x, nil, nil))
 	if outB == nil || outB.Value == nil {
-		t.Fatalf("modelB forward returned nil")
+		t.Fatalf("Ошибка: modelB.Forward вернул nil / Error: modelB.Forward returned nil")
 	}
-	predsB := outB.Value.Data
+	predB := outB.Value.Data
+	t.Logf("Предсказания после загрузки: %v / Predictions after load: %v", predB, predB)
 
-	// Сравниваем предсказания
-	if len(predsA) != len(predsB) {
-		t.Fatalf("predictions length mismatch: %d vs %d", len(predsA), len(predsB))
+	if len(predA) != len(predB) {
+		t.Fatalf("Длина предсказаний не совпадает: %d vs %d / Prediction length mismatch: %d vs %d", len(predA), len(predB), len(predA), len(predB))
 	}
-	for i := range predsA {
-		diff := predsA[i] - predsB[i]
-		if diff < 0 {
-			if -diff > eps {
-				t.Fatalf("prediction[%d] mismatch: a=%v b=%v (diff=%.12f)", i, predsA[i], predsB[i], diff)
-			}
-		} else {
-			if diff > eps {
-				t.Fatalf("prediction[%d] mismatch: a=%v b=%v (diff=%.12f)", i, predsA[i], predsB[i], diff)
-			}
+	for i := range predA {
+		diff := predA[i] - predB[i]
+		if diff < -eps || diff > eps {
+			t.Fatalf("Предсказание несовпадает для индекса %d: diff=%.12f / Prediction mismatch at index %d: diff=%.12f", i, diff, i, diff)
 		}
 	}
+	t.Log("Предсказания до сохранения и после загрузки совпадают / Predictions before save and after load match")
+
+	// финальный лог
+	t.Log("Продуктовый кейс пройден: модель ведёт себя идентично после перезапуска / Product case passed: model behaves identically after restart")
 }

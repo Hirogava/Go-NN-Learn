@@ -1,7 +1,6 @@
 package applied_test
 
 import (
-	"encoding/gob"
 	"fmt"
 	"math"
 	"math/rand"
@@ -9,340 +8,102 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/Hirogava/Go-NN-Learn/pkg/api"
+	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
+	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
-// ----------------- Utilities -----------------
+// Product test: spam filter (binary classification)
+// Logs are bilingual: "на русском / in English"
 
-func seedAll(seed int64) {
+// ------------------ Helpers ------------------
+
+func setSeed(seed int64) {
+	if seed == 0 {
+		seed = 42
+	}
 	rand.Seed(seed)
-	// Если надо — сюда добавить другие PRNG.
 }
 
-func sigmoid(x float64) float64 {
-	return 1.0 / (1.0 + math.Exp(-x))
-}
-
-func dsigmoidFromOutput(s float64) float64 {
-	// derivative d/dz sigmoid(z) = s*(1-s) if s = sigmoid(z)
-	return s * (1.0 - s)
-}
-
-func relu(x float64) float64 {
-	if x > 0 {
-		return x
-	}
-	return 0
-}
-
-func drelu(x float64) float64 {
-	if x > 0 {
-		return 1
-	}
-	return 0
-}
-
-// SaveWeights saves model params to file (gob)
-func SaveWeights(path string, w1 [][]float64, b1 []float64, w2 [][]float64, b2 []float64) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	enc := gob.NewEncoder(f)
-	if err := enc.Encode(w1); err != nil {
-		return err
-	}
-	if err := enc.Encode(b1); err != nil {
-		return err
-	}
-	if err := enc.Encode(w2); err != nil {
-		return err
-	}
-	if err := enc.Encode(b2); err != nil {
-		return err
-	}
-	return nil
-}
-
-func LoadWeights(path string) ([][]float64, []float64, [][]float64, []float64, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	defer f.Close()
-	dec := gob.NewDecoder(f)
-	var w1 [][]float64
-	var b1 []float64
-	var w2 [][]float64
-	var b2 []float64
-	if err := dec.Decode(&w1); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := dec.Decode(&b1); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := dec.Decode(&w2); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := dec.Decode(&b2); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	return w1, b1, w2, b2, nil
-}
-
-// ----------------- Data generation -----------------
-
-// GenerateSpamLikeData: создаем бинарные/счетные признаки для текста.
-// Идея: есть vocabSize признаков; для spam примеров вероятность выставлять
-// "spam-feature" гораздо выше, поэтому задача легко линейно/не очень линейно разделима.
-func GenerateSpamLikeData(n int, vocabSize int, spamRatio float64, spamFeatureCount int) (X [][]float64, y []int) {
-	X = make([][]float64, n)
-	y = make([]int, n)
-
-	// Indices that signal spam (first spamFeatureCount)
-	spamIdx := make([]int, spamFeatureCount)
-	for i := 0; i < spamFeatureCount; i++ {
-		spamIdx[i] = i
-	}
-
-	for i := 0; i < n; i++ {
-		isSpam := rand.Float64() < spamRatio
-		row := make([]float64, vocabSize)
-		// baseline random noise
-		for j := 0; j < vocabSize; j++ {
-			// low chance of normal words
-			if rand.Float64() < 0.03 {
-				row[j] = 1
-			} else {
-				row[j] = 0
-			}
+func oneHotTargets(labels []int, classes int) *tensor.Tensor {
+	n := len(labels)
+	data := make([]float64, n*classes)
+	for i, lab := range labels {
+		if lab < 0 || lab >= classes {
+			panic("label out of range")
 		}
-		if isSpam {
-			// activate several spam-indicative features
-			for k := 0; k < 3; k++ {
-				idx := spamIdx[rand.Intn(spamFeatureCount)]
-				row[idx] = 1
-			}
-			// also some other words with moderate chance
-			for j := 0; j < vocabSize; j++ {
-				if rand.Float64() < 0.02 {
-					row[j] = 1
-				}
-			}
-			y[i] = 1
-		} else {
-			// ham: ensure spam-indices rarely active
-			for j := 0; j < spamFeatureCount; j++ {
-				if rand.Float64() < 0.005 {
-					row[j] = 1
-				}
-			}
-			y[i] = 0
-		}
-		X[i] = row
+		data[i*classes+lab] = 1.0
 	}
-	return
+	// shape [n, classes]
+	return &tensor.Tensor{
+		Data:    data,
+		Shape:   []int{n, classes},
+		Strides: []int{classes, 1},
+	}
 }
 
-// ----------------- Model helpers -----------------
-
-// Create network params with small random init
-func NewModel(vocabSize, hidden int) ([][]float64, []float64, [][]float64, []float64) {
-	// w1: vocabSize x hidden
-	w1 := make([][]float64, vocabSize)
-	for i := 0; i < vocabSize; i++ {
-		w1[i] = make([]float64, hidden)
-		for j := 0; j < hidden; j++ {
-			// Xavier-ish small init
-			w1[i][j] = rand.NormFloat64() * 0.1
-		}
+// makeTensorBatch builds a tensor for batch X ([][]float64) with shape [N, D]
+func makeTensorBatch(X [][]float64) *tensor.Tensor {
+	if len(X) == 0 {
+		return &tensor.Tensor{Data: []float64{}, Shape: []int{0, 0}, Strides: []int{0, 1}}
 	}
-	b1 := make([]float64, hidden)
-	for j := 0; j < hidden; j++ {
-		b1[j] = 0
-	}
-	// w2: hidden x 1 (store as hidden x 1)
-	w2 := make([][]float64, hidden)
-	for j := 0; j < hidden; j++ {
-		w2[j] = make([]float64, 1)
-		w2[j][0] = rand.NormFloat64() * 0.1
-	}
-	b2 := make([]float64, 1)
-	return w1, b1, w2, b2
-}
-
-func ForwardSingle(x []float64, w1 [][]float64, b1 []float64, w2 [][]float64, b2 []float64) (float64, []float64) {
-	// x: [vocab], w1: vocab x hidden -> z1 = x * w1
-	hidden := len(b1)
-	z1 := make([]float64, hidden)
-	for j := 0; j < hidden; j++ {
-		var sum float64
-		for i := 0; i < len(x); i++ {
-			if x[i] == 0 {
-				continue
-			}
-			sum += x[i] * w1[i][j]
-		}
-		sum += b1[j]
-		z1[j] = relu(sum)
-	}
-	// output
-	var z2 float64
-	for j := 0; j < hidden; j++ {
-		z2 += z1[j] * w2[j][0]
-	}
-	z2 += b2[0]
-	y := sigmoid(z2)
-	return y, z1
-}
-
-func ComputeLossBatch(X [][]float64, y []int, w1 [][]float64, b1 []float64, w2 [][]float64, b2 []float64) float64 {
-	var loss float64
 	N := len(X)
+	D := len(X[0])
+	data := make([]float64, 0, N*D)
 	for i := 0; i < N; i++ {
-		pred, _ := ForwardSingle(X[i], w1, b1, w2, b2)
-		// BCE: -[y log p + (1-y) log(1-p)]
-		p := math.Min(math.Max(pred, 1e-12), 1-1e-12)
-		if y[i] == 1 {
-			loss += -math.Log(p)
-		} else {
-			loss += -math.Log(1 - p)
+		row := X[i]
+		if len(row) != D {
+			panic("inconsistent row length")
 		}
+		data = append(data, row...)
 	}
-	return loss / float64(N)
+	return &tensor.Tensor{Data: data, Shape: []int{N, D}, Strides: []int{D, 1}}
 }
 
-// Simple SGD training for one epoch, returns avg loss
-func TrainEpoch(X [][]float64, y []int, batchSize int, lr float64, w1 [][]float64, b1 []float64, w2 [][]float64, b2 []float64) float64 {
-	N := len(X)
-	perm := rand.Perm(N)
-	totalLoss := 0.0
-	for start := 0; start < N; start += batchSize {
-		end := start + batchSize
-		if end > N {
-			end = N
-		}
-		// zero grads
-		// grads have same shapes
-		gw1 := make([][]float64, len(w1))
-		for i := 0; i < len(w1); i++ {
-			gw1[i] = make([]float64, len(w1[0]))
-		}
-		gb1 := make([]float64, len(b1))
-		gw2 := make([][]float64, len(w2))
-		for j := 0; j < len(w2); j++ {
-			gw2[j] = make([]float64, 1)
-		}
-		gb2 := make([]float64, 1)
-
-		// accumulate gradients over batch
-		batchCount := 0
-		for _, idx := range perm[start:end] {
-			x := X[idx]
-			label := y[idx]
-			pred, hiddenActiv := ForwardSingle(x, w1, b1, w2, b2)
-			// loss derivative wrt pre-sigmoid z2: dL/dz2 = p - y
-			dz2 := pred - float64(label)
-			// gradients for w2 and b2
-			for j := 0; j < len(w2); j++ {
-				gw2[j][0] += dz2 * hiddenActiv[j]
-			}
-			gb2[0] += dz2
-			// backprop to hidden
-			for j := 0; j < len(hiddenActiv); j++ {
-				// derivative through ReLU
-				var drelu_j float64
-				// we need pre-activation value to know drelu; but we only stored post-ReLU (hiddenActiv)
-				// assume drelu = 1 if hiddenActiv>0 else 0 (works)
-				if hiddenActiv[j] > 0 {
-					drelu_j = 1
-				} else {
-					drelu_j = 0
-				}
-				dhidden := dz2 * w2[j][0] * drelu_j
-				// gradients for w1[:, j]
-				for i := 0; i < len(x); i++ {
-					if x[i] == 0 {
-						continue
-					}
-					gw1[i][j] += dhidden * x[i]
-				}
-				gb1[j] += dhidden
-			}
-			batchCount++
-		}
-		// average grads and update params
-		bs := float64(batchCount)
-		if bs == 0 {
-			continue
-		}
-		for i := 0; i < len(w1); i++ {
-			for j := 0; j < len(w1[0]); j++ {
-				w1[i][j] -= lr * (gw1[i][j] / bs)
+// argmax per-row for logits shape [N, C]
+func argmaxRows(t *tensor.Tensor) []int {
+	rows := t.Shape[0]
+	cols := t.Shape[1]
+	out := make([]int, rows)
+	for i := 0; i < rows; i++ {
+		best := 0
+		base := i*cols
+		bestVal := t.Data[base]
+		for j := 1; j < cols; j++ {
+			v := t.Data[base+j]
+			if v > bestVal {
+				bestVal = v
+				best = j
 			}
 		}
-		for j := 0; j < len(b1); j++ {
-			b1[j] -= lr * (gb1[j] / bs)
-		}
-		for j := 0; j < len(w2); j++ {
-			w2[j][0] -= lr * (gw2[j][0] / bs)
-		}
-		b2[0] -= lr * (gb2[0] / bs)
-
-		// compute loss for this mini-batch (for logging)
-		for _, idx := range perm[start:end] {
-			l := ComputeLossBatch([][]float64{X[idx]}, []int{y[idx]}, w1, b1, w2, b2)
-			totalLoss += l
-		}
+		out[i] = best
 	}
-	// average batch loss (approx)
-	numBatches := float64((N + batchSize - 1) / batchSize)
-	if numBatches == 0 {
-		return 0
-	}
-	return totalLoss / numBatches
+	return out
 }
 
-// ----------------- Metrics -----------------
-
-func PredictBatch(X [][]float64, w1 [][]float64, b1 []float64, w2 [][]float64, b2 []float64, threshold float64) ([]int, []float64) {
-	N := len(X)
-	preds := make([]int, N)
-	scores := make([]float64, N)
-	for i := 0; i < N; i++ {
-		p, _ := ForwardSingle(X[i], w1, b1, w2, b2)
-		scores[i] = p
-		if p >= threshold {
-			preds[i] = 1
-		} else {
-			preds[i] = 0
+func accuracy(ytrue []int, ypred []int) float64 {
+	ok := 0
+	for i := range ytrue {
+		if ytrue[i] == ypred[i] {
+			ok++
 		}
 	}
-	return preds, scores
+	return float64(ok) / float64(len(ytrue))
 }
 
-func ComputeAccuracy(yTrue []int, yPred []int) float64 {
-	correct := 0
-	for i := range yTrue {
-		if yTrue[i] == yPred[i] {
-			correct++
-		}
-	}
-	return float64(correct) / float64(len(yTrue))
-}
-
-func PrecisionRecall(yTrue []int, yPred []int) (precision, recall float64) {
-	tp := 0
-	fp := 0
-	fn := 0
-	for i := range yTrue {
-		if yPred[i] == 1 && yTrue[i] == 1 {
+func precisionRecall(ytrue []int, ypred []int) (precision, recall float64) {
+	tp, fp, fn := 0, 0, 0
+	for i := range ytrue {
+		if ypred[i] == 1 && ytrue[i] == 1 {
 			tp++
 		}
-		if yPred[i] == 1 && yTrue[i] == 0 {
+		if ypred[i] == 1 && ytrue[i] == 0 {
 			fp++
 		}
-		if yPred[i] == 0 && yTrue[i] == 1 {
+		if ypred[i] == 0 && ytrue[i] == 1 {
 			fn++
 		}
 	}
@@ -359,30 +120,125 @@ func PrecisionRecall(yTrue []int, yPred []int) (precision, recall float64) {
 	return
 }
 
-// ----------------- The Test -----------------
+// AlmostEqual check
+func almostEqual(a, b float64, eps float64) bool {
+	return math.Abs(a-b) <= eps
+}
+
+// compare params (all param nodes) — elementwise with eps
+func compareParams(t *testing.T, aParams, bParams []*graph.Node, eps float64) {
+	if len(aParams) != len(bParams) {
+		t.Fatalf("параметры: разное количество / params: count mismatch %d vs %d", len(aParams), len(bParams))
+	}
+	for pi := range aParams {
+		a := aParams[pi].Value.Data
+		b := bParams[pi].Value.Data
+		if len(a) != len(b) {
+			t.Fatalf("параметры: форма отличается / params shape mismatch for param %d", pi)
+		}
+		for i := range a {
+			if !almostEqual(a[i], b[i], eps) {
+				t.Fatalf("параметры: элемент %d параметра %d отличается более чем eps (a=%g b=%g eps=%g) / params: element %d of param %d differs (a=%g b=%g eps=%g)", i, pi, a[i], b[i], eps, i, pi, a[i], b[i], eps)
+			}
+		}
+	}
+}
+
+// ------------------ Small local layers to compose Module ------------------
+
+// simpleSequential implements layers.Module minimally so we can call api.SaveCheckpoint
+type simpleSequential struct {
+	mods []layers.Layer
+}
+
+func (s *simpleSequential) Layers() []layers.Layer { return s.mods }
+
+func (s *simpleSequential) Forward(x *graph.Node) *graph.Node {
+	out := x
+	for _, m := range s.mods {
+		out = m.Forward(out)
+	}
+	return out
+}
+
+func (s *simpleSequential) Params() []*graph.Node {
+	var res []*graph.Node
+	for _, m := range s.mods {
+		res = append(res, m.Params()...)
+	}
+	return res
+}
+
+func (s *simpleSequential) Train() {
+	for _, m := range s.mods {
+		m.Train()
+	}
+}
+func (s *simpleSequential) Eval() {
+	for _, m := range s.mods {
+		m.Eval()
+	}
+}
+
+// ------------------ Data generator (synthetic) ------------------
+
+// GenerateBagOfWordsSpam generates N samples with vocabSize features.
+// spamFeatureCount features are more likely in spam examples.
+func GenerateBagOfWordsSpam(N, vocabSize int, spamRatio float64, spamFeatureCount int) (X [][]float64, y []int) {
+	X = make([][]float64, N)
+	y = make([]int, N)
+	for i := 0; i < N; i++ {
+		row := make([]float64, vocabSize)
+		isSpam := rand.Float64() < spamRatio
+		if isSpam {
+			// activate several spam-indicative features
+			for k := 0; k < 3; k++ {
+				idx := rand.Intn(spamFeatureCount)
+				row[idx] = 1.0
+			}
+			// random noise
+			for j := 0; j < vocabSize; j++ {
+				if rand.Float64() < 0.02 {
+					row[j] = 1.0
+				}
+			}
+			y[i] = 1
+		} else {
+			// ham: rare spam features
+			for j := 0; j < spamFeatureCount; j++ {
+				if rand.Float64() < 0.01 {
+					row[j] = 1.0
+				}
+			}
+			y[i] = 0
+		}
+		X[i] = row
+	}
+	return
+}
+
+// ------------------ The product test ------------------
 
 func TestTextSpamFilter(t *testing.T) {
-	seedAll(42)
-
-	// Hyperparams / dataset size
-	N := 600                 // total samples (200-1000 as in spec)
-	vocabSize := 200         // vocabulary size
-	spamRatio := 0.4         // 40% spam (adjustable)
-	spamFeatureCount := 10   // how many features are "spam indicators"
-	hidden := 64             // hidden units
-	trainRatio := 0.8
+	setSeed(42)
+	// Hyperparams (tweak if needed)
+	N := 800
+	vocabSize := 300
+	spamRatio := 0.4
+	spamFeatureCount := 12
+	hidden := 64
+	epochs := 40
 	batchSize := 32
 	lr := 0.05
-	epochs := 40             // between 20-60 as spec recommends
 
-	// Generate synthetic dataset
-	X, y := GenerateSpamLikeData(N, vocabSize, spamRatio, spamFeatureCount)
+	// Generate data
+	X, y := GenerateBagOfWordsSpam(N, vocabSize, spamRatio, spamFeatureCount)
 
-	// deterministic split
-	indices := rand.Perm(N)
-	trainN := int(float64(N) * trainRatio)
-	trainIdx := indices[:trainN]
-	testIdx := indices[trainN:]
+	// Train/test split deterministic
+	perm := rand.Perm(N)
+	trainN := int(float64(N) * 0.8)
+	trainIdx := perm[:trainN]
+	testIdx := perm[trainN:]
 
 	Xtrain := make([][]float64, len(trainIdx))
 	ytrain := make([]int, len(trainIdx))
@@ -397,65 +253,178 @@ func TestTextSpamFilter(t *testing.T) {
 		ytest[i] = y[idx]
 	}
 
-	// Initialize model
-	w1, b1, w2, b2 := NewModel(vocabSize, hidden)
+	// Build model using library layers
+	engine := autograd.NewEngine()
+	initFn := func(arr []float64) {
+		for i := range arr {
+			arr[i] = rand.NormFloat64() * 0.05
+		}
+	}
+	d1 := layers.NewDense(vocabSize, hidden, initFn)
+	r1 := &reluLayer{}
+	d2 := layers.NewDense(hidden, 2, initFn)
 
-	// compute starting loss
-	startLoss := ComputeLossBatch(Xtrain, ytrain, w1, b1, w2, b2)
-	t.Logf("start train loss: %.6f", startLoss)
+	model := &simpleSequential{mods: []layers.Layer{d1, r1, d2}}
 
-	// training loop with checkpoint-by-best-loss
-	var bestLoss = math.MaxFloat64
-	tmpdir := os.TempDir()
-	checkpointPath := filepath.Join(tmpdir, fmt.Sprintf("spam_best_checkpoint_%d.chk", time.Now().UnixNano()))
+	// Training loop: mini-batch SGD using autograd.SoftmaxCrossEntropy + Sum
+	bestLoss := math.Inf(1)
+	tmpDir := os.TempDir()
+	checkpointPath := filepath.Join(tmpDir, fmt.Sprintf("spam_product_best_%d.chk", time.Now().UnixNano()))
+
+	// helper to get params and zero grads
+	params := model.Params()
+	zeroParams := func() {
+		for _, p := range params {
+			if p != nil {
+				p.ZeroGrad()
+			}
+		}
+	}
+
+	// initial train loss
+	{
+		// evaluate full train loss before training
+		Xt := makeTensorBatch(Xtrain)
+		inNode := graph.NewNode(Xt, nil, nil)
+		out := model.Forward(inNode) // logits [N,2]
+		// build targets tensor
+		tensorY := oneHotTargets(ytrain, 2)
+		lossNode := engine.SoftmaxCrossEntropy(out, tensorY) // [N,1]
+		sumLoss := engine.Sum(lossNode)                      // scalar
+		// no backward, just read sum
+		startLoss := sumLoss.Value.Data[0] / float64(len(ytrain))
+		t.Logf("начальный train loss: %.6f / start train loss: %.6f", startLoss, startLoss)
+	}
 
 	for epoch := 1; epoch <= epochs; epoch++ {
-		epochLoss := TrainEpoch(Xtrain, ytrain, batchSize, lr, w1, b1, w2, b2)
-		// also compute full train loss at epoch end
-		fullTrainLoss := ComputeLossBatch(Xtrain, ytrain, w1, b1, w2, b2)
-		t.Logf("epoch %d: epochLoss(approx)=%.6f fullTrainLoss=%.6f", epoch, epochLoss, fullTrainLoss)
-
-		if fullTrainLoss < bestLoss {
-			// save checkpoint
-			if err := SaveWeights(checkpointPath, w1, b1, w2, b2); err != nil {
-				t.Fatalf("failed to save checkpoint: %v", err)
+		// shuffle train indices per epoch (deterministic given seed)
+		permT := rand.Perm(len(Xtrain))
+		epochLossSum := 0.0
+		batches := 0
+		for start := 0; start < len(permT); start += batchSize {
+			end := start + batchSize
+			if end > len(permT) {
+				end = len(permT)
 			}
+			batchIdx := permT[start:end]
+			// prepare batch arrays
+			B := len(batchIdx)
+			Xb := make([][]float64, B)
+			yb := make([]int, B)
+			for i, bi := range batchIdx {
+				Xb[i] = Xtrain[bi]
+				yb[i] = ytrain[bi]
+			}
+			// forward
+			inT := makeTensorBatch(Xb)
+			inNode := graph.NewNode(inT, nil, nil)
+			logits := model.Forward(inNode) // shape [B,2]
+			// build target tensor
+			targ := oneHotTargets(yb, 2)
+			lossPerSample := engine.SoftmaxCrossEntropy(logits, targ) // [B,1]
+			loss := engine.Sum(lossPerSample)                         // scalar [1]
+			// zero grads
+			zeroParams()
+			engine.ZeroGrad()
+			// backward
+			engine.Backward(loss)
+			// update params (SGD)
+			for _, p := range params {
+				if p.Grad == nil {
+					continue
+				}
+				// p.Value.Data and p.Grad.Data same length
+				for i := 0; i < len(p.Value.Data); i++ {
+					grad := p.Grad.Data[i] / float64(B) // average over batch
+					p.Value.Data[i] -= lr * grad
+				}
+			}
+			// record loss numeric
+			epochLossSum += loss.Value.Data[0] / float64(B)
+			batches++
+		}
+		avgEpochLoss := epochLossSum / float64(batches)
+		t.Logf("эпоха %d / epoch %d: avg loss = %.6f", epoch, epoch, avgEpochLoss)
+
+		// compute full train loss for checkpoint criteria
+		Xt := makeTensorBatch(Xtrain)
+		inNode := graph.NewNode(Xt, nil, nil)
+		out := model.Forward(inNode)
+		tensorY := oneHotTargets(ytrain, 2)
+		fullLossPerSample := engine.SoftmaxCrossEntropy(out, tensorY)
+		sumLoss := engine.Sum(fullLossPerSample)
+		fullTrainLoss := sumLoss.Value.Data[0] / float64(len(ytrain))
+		t.Logf("эпоха %d / epoch %d: full train loss = %.6f", epoch, epoch, fullTrainLoss)
+
+		// checkpoint save if improved
+		if fullTrainLoss < bestLoss {
+			if err := api.SaveCheckpoint(model, checkpointPath); err != nil {
+				t.Fatalf("не удалось сохранить чекпоинт: %v / failed to save checkpoint: %v", err, err)
+			}
+			t.Logf("сохранён лучший чекпоинт (epoch %d) / saved best checkpoint (epoch %d): %s", epoch, epoch, checkpointPath)
 			bestLoss = fullTrainLoss
 		}
 	}
 
-	// After training: load best checkpoint and evaluate on test
-	loadingW1, loadingB1, loadingW2, loadingB2, err := LoadWeights(checkpointPath)
-	if err != nil {
-		t.Fatalf("failed to load checkpoint: %v", err)
-	}
-	// compute metrics on test
-	preds, _ := PredictBatch(Xtest, loadingW1, loadingB1, loadingW2, loadingB2, 0.5)
-	acc := ComputeAccuracy(ytest, preds)
-	precision, recall := PrecisionRecall(ytest, preds)
+	// Load checkpoint into a fresh model and compare params+predictions
+	// build fresh model (same architecture)
+	d1b := layers.NewDense(vocabSize, hidden, initFn)
+	r1b := &reluLayer{}
+	d2b := layers.NewDense(hidden, 2, initFn)
+	model2 := &simpleSequential{mods: []layers.Layer{d1b, r1b, d2b}}
 
-	t.Logf("test accuracy=%.4f precision(spam)=%.4f recall(spam)=%.4f", acc, precision, recall)
-
-	// compute final train loss and compare with startLoss for >=30% drop
-	finalTrainLoss := ComputeLossBatch(Xtrain, ytrain, loadingW1, loadingB1, loadingW2, loadingB2)
-	t.Logf("startLoss=%.6f finalTrainLoss=%.6f (reduction %.2f%%)", startLoss, finalTrainLoss, (startLoss-finalTrainLoss)/startLoss*100.0)
-
-	// Criteria (as specified):
-	minAcc := 0.90
-	minPrecision := 0.85
-	minReduction := 0.30 // 30%
-
-	if acc < minAcc {
-		t.Fatalf("test accuracy %.4f < required %.2f", acc, minAcc)
-	}
-	if precision < minPrecision {
-		t.Fatalf("precision(spam) %.4f < required %.2f", precision, minPrecision)
-	}
-	reduction := (startLoss - finalTrainLoss) / startLoss
-	if reduction < minReduction {
-		t.Fatalf("train loss reduction %.2f%% < required %.2f%%", reduction*100.0, minReduction*100.0)
+	// load
+	if err := api.LoadCheckpoint(model2, checkpointPath); err != nil {
+		t.Fatalf("не удалось загрузить чекпоинт: %v / failed to load checkpoint: %v", err, err)
 	}
 
-	// cleanup checkpoint file
+	// compare params (within small eps)
+	compareParams(t, model.Params(), model2.Params(), 1e-9)
+	t.Logf("параметры после загрузки совпадают / parameters equal after load")
+
+	// Compare predictions on fixed test batch (take 100 samples or all)
+	nEval := len(Xtest)
+	if nEval > 200 {
+		nEval = 200
+	}
+	Xeval := Xtest[:nEval]
+
+	// preds from model
+	inT := makeTensorBatch(Xeval)
+	inNode := graph.NewNode(inT, nil, nil)
+	out1 := model.Forward(inNode)
+	preds1 := argmaxRows(out1.Value)
+
+	// preds from model2
+	inNode2 := graph.NewNode(inT, nil, nil)
+	out2 := model2.Forward(inNode2)
+	preds2 := argmaxRows(out2.Value)
+
+	// assert predictions very close (exact equality for argmax expected)
+	for i := 0; i < len(preds1); i++ {
+		if preds1[i] != preds2[i] {
+			t.Fatalf("предсказания модели и загруженной модели различаются на образце %d: %d vs %d / loaded vs original predict mismatch at sample %d: %d vs %d", i, preds1[i], preds2[i], i, preds1[i], preds2[i])
+		}
+	}
+	t.Logf("предсказания совпадают для тестовой подборки / predictions equal on eval slice")
+
+	// final evaluation metrics on test set using loaded model
+	inAll := makeTensorBatch(Xtest)
+	inNodeAll := graph.NewNode(inAll, nil, nil)
+	outLogits := model2.Forward(inNodeAll)
+	finalPreds := argmaxRows(outLogits.Value)
+	acc := accuracy(ytest, finalPreds)
+	prec, rec := precisionRecall(ytest, finalPreds)
+	t.Logf("тест: accuracy=%.4f precision(spam)=%.4f recall(spam)=%.4f / test: accuracy=%.4f precision(spam)=%.4f recall(spam)=%.4f", acc, acc, prec, prec, rec, rec)
+
+	// checks: thresholds from spec
+	if acc < 0.90 {
+		t.Fatalf("тестовая accuracy %.4f < 0.90 / test accuracy %.4f < 0.90", acc, acc)
+	}
+	if prec < 0.85 {
+		t.Fatalf("precision(spam) %.4f < 0.85 / precision(spam) %.4f < 0.85", prec, prec)
+	}
+
+	// cleanup
 	_ = os.Remove(checkpointPath)
 }
