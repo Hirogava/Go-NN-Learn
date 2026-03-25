@@ -189,6 +189,64 @@ func (op *TanhOp) Backward(grad *tensor.Tensor) {
 	op.input.Grad = gradInput
 }
 
+type SoftPlusOp struct {
+	input   *graph.Node
+	output  *tensor.Tensor
+	sigmoid *tensor.Tensor // d/dx softplus(x) = sigmoid(x)
+}
+
+func NewSoftPlusOp(input *graph.Node) *SoftPlusOp {
+	return &SoftPlusOp{input: input}
+}
+
+func (op *SoftPlusOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	sigmoid := tensor.Zeros(op.input.Value.Shape...)
+
+	// Стабильные вычисления без переполнений:
+	// softplus(x) = log(1 + exp(x))
+	// if x > 0:  softplus(x) = x + log(1 + exp(-x))
+	// else:      softplus(x) = log(1 + exp(x))
+	for i, x := range op.input.Value.Data {
+		if x >= 0 {
+			expNeg := math.Exp(-x)
+			// sigmoid(x) = 1 / (1 + exp(-x))
+			s := 1.0 / (1.0 + expNeg)
+			sigmoid.Data[i] = s
+			result.Data[i] = x + math.Log(1.0+expNeg)
+		} else {
+			expPos := math.Exp(x)
+			// sigmoid(x) = exp(x) / (1 + exp(x))
+			s := expPos / (1.0 + expPos)
+			sigmoid.Data[i] = s
+			result.Data[i] = math.Log(1.0 + expPos)
+		}
+	}
+
+	op.output = result
+	op.sigmoid = sigmoid
+	return result
+}
+
+func (e *Engine) SoftPlus(input *graph.Node) *graph.Node {
+	op := NewSoftPlusOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *SoftPlusOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		gradInput.Data[i] = grad.Data[i] * op.sigmoid.Data[i]
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
 type SoftmaxCrossEntropyOp struct {
 	input   *graph.Node
 	target  *tensor.Tensor
