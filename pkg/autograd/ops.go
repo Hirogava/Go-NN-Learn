@@ -1,9 +1,11 @@
 package autograd
 
 import (
+	"fmt"
+
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // Add
@@ -272,4 +274,52 @@ func (e *Engine) Reshape(a *graph.Node, newShape []int) *graph.Node {
 	n := graph.NewNode(val, []*graph.Node{a}, op)
 	e.Nodes = append(e.Nodes, n)
 	return n
+}
+
+// Concatenate
+type ConcatenateOp struct {
+	parents []*graph.Node
+	axis    int
+}
+
+func (op *ConcatenateOp) Backward(grad *tensor.Tensor) {
+	offset := 0
+	for _, parent := range op.parents {
+		// Вырезаем кусок градиента, принадлежащий этому родителю
+		parentGradPart, _ := tensor.Slice(grad, op.axis, offset, parent.Value.Shape[op.axis])
+
+		if parent.Grad == nil {
+			parent.Grad = tensor.Zeros(parent.Value.Shape...)
+		}
+
+		// Накапливаем градиент (используем твой ops.Add)
+		// Внимание: твой ops.Add возвращает новый тензор, поэтому переприсваиваем
+		newGrad, _ := tensor.Add(parent.Grad, parentGradPart)
+		parent.Grad = newGrad
+
+		offset += parent.Value.Shape[op.axis]
+	}
+}
+
+func (e *Engine) Concatenate(inputs []*graph.Node, axis int) *graph.Node {
+	tensors := make([]*tensor.Tensor, len(inputs))
+	for i, n := range inputs {
+		tensors[i] = n.Value
+	}
+
+	// Прямой проход
+	resultValue, err := tensor.Concatenate(tensors, axis)
+	if err != nil {
+		panic(fmt.Sprintf("Concatenate error: %v", err))
+	}
+
+	op := &ConcatenateOp{
+		parents: inputs,
+		axis:    axis,
+	}
+
+	// Регистрация в графе
+	node := graph.NewNode(resultValue, inputs, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
 }

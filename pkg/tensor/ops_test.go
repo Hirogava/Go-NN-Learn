@@ -667,3 +667,38 @@ func TestFMAOperation(t *testing.T) {
 		}
 	}
 }
+
+func TestConcatenate(t *testing.T) {
+	// Создаем два тензора 2x2
+	t1 := Zeros(2, 2)
+	for i := range t1.Data {
+		t1.Data[i] = 1.0
+	}
+
+	t2 := Zeros(2, 2)
+	for i := range t2.Data {
+		t2.Data[i] = 2.0
+	}
+
+	// Клеим по строкам (axis 0) -> результат должен быть 4x2
+	res, err := Concatenate([]*Tensor{t1, t2}, 0)
+	if err != nil {
+		t.Fatalf("Concatenate failed: %v", err)
+	}
+
+	if res.Shape[0] != 4 || res.Shape[1] != 2 {
+		t.Errorf("Wrong shape: %v", res.Shape)
+	}
+
+	// Проверяем данные: первые 4 элемента — 1.0, вторые 4 — 2.0
+	for i := 0; i < 4; i++ {
+		if res.Data[i] != 1.0 {
+			t.Errorf("Expected 1.0 at %d", i)
+		}
+	}
+	for i := 4; i < 8; i++ {
+		if res.Data[i] != 2.0 {
+			t.Errorf("Expected 2.0 at %d", i)
+		}
+	}
+}
