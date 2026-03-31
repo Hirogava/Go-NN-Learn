@@ -4,7 +4,7 @@
 package tensor
 
 /*
-#cgo CFLAGS: -I/usr/include/openblas
+#cgo CFLAGS: -I/usr/include/openblas -I/usr/include/x86_64-linux-gnu/openblas-pthread
 #cgo LDFLAGS: -lopenblas -lm
 
 #include <cblas.h>
