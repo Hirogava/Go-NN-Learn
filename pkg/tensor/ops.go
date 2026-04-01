@@ -479,3 +479,91 @@ func Exp(a *Tensor) *Tensor {
 func Log(a *Tensor) *Tensor {
 	return Apply(a, math.Log)
 }
+
+// Concatenate объединяет слайс тензоров по указанной оси.
+func Concatenate(tensors []*Tensor, axis int) (*Tensor, error) {
+	if len(tensors) == 0 {
+		return nil, fmt.Errorf("empty tensors list")
+	}
+
+	// 1. Проверка размерностей и расчет новой формы
+	firstShape := tensors[0].Shape
+	if axis < 0 || axis >= len(firstShape) {
+		return nil, fmt.Errorf("invalid axis %d for shape %v", axis, firstShape)
+	}
+
+	newShape := append([]int{}, firstShape...)
+	concatDimSize := 0
+	for _, t := range tensors {
+		if len(t.Shape) != len(firstShape) {
+			return nil, fmt.Errorf("tensors must have same number of dimensions")
+		}
+		for i := range t.Shape {
+			if i != axis && t.Shape[i] != firstShape[i] {
+				return nil, fmt.Errorf("mismatch at axis %d: %d != %d", i, t.Shape[i], firstShape[i])
+			}
+		}
+		concatDimSize += t.Shape[axis]
+	}
+	newShape[axis] = concatDimSize
+
+	// 2. Инициализация результирующего тензора (используем твои Zeros)
+	res := Zeros(newShape...)
+
+	// 3. Копирование данных
+	offset := 0
+	for _, t := range tensors {
+		// Копируем данные из t в res со смещением по оси axis
+		// Используем обход по всем элементам входного тензора
+		for i := 0; i < len(t.Data); i++ {
+			// Перевод плоского индекса в многомерные координаты
+			coords := make([]int, len(t.Shape))
+			tempIdx := i
+			for d := len(t.Shape) - 1; d >= 0; d-- {
+				coords[d] = tempIdx % t.Shape[d]
+				tempIdx /= t.Shape[d]
+			}
+
+			// Сдвигаем координату по целевой оси
+			coords[axis] += offset
+
+			// Перевод координат обратно в плоский индекс для res
+			resIdx := 0
+			for d := range coords {
+				resIdx += coords[d] * res.Strides[d]
+			}
+			res.Data[resIdx] = t.Data[i]
+		}
+		offset += t.Shape[axis]
+	}
+
+	return res, nil
+}
+
+// Slice извлекает часть тензора. Нужен для обратного прохода Concatenate.
+func Slice(t *Tensor, axis int, start int, length int) (*Tensor, error) {
+	newShape := append([]int{}, t.Shape...)
+	newShape[axis] = length
+
+	res := Zeros(newShape...)
+
+	for i := 0; i < len(res.Data); i++ {
+		coords := make([]int, len(newShape))
+		tempIdx := i
+		for d := len(newShape) - 1; d >= 0; d-- {
+			coords[d] = tempIdx % newShape[d]
+			tempIdx /= newShape[d]
+		}
+
+		// Сдвигаемся в исходном тензоре
+		coords[axis] += start
+
+		oldIdx := 0
+		for d := range coords {
+			oldIdx += coords[d] * t.Strides[d]
+		}
+		res.Data[i] = t.Data[oldIdx]
+	}
+
+	return res, nil
+}
