@@ -189,6 +189,58 @@ func (op *TanhOp) Backward(grad *tensor.Tensor) {
 	op.input.Grad = gradInput
 }
 
+// geluNormalCDF — Φ(x), CDF стандартного нормального распределения.
+// Используется связка с math.Erf (устойчива на краях и для больших |x|).
+func geluNormalCDF(x float64) float64 {
+	return 0.5 * (1.0 + math.Erf(x/math.Sqrt2))
+}
+
+// geluNormalPDF — плотность N(0,1) в точке x: exp(-x²/2) / √(2π).
+func geluNormalPDF(x float64) float64 {
+	return math.Exp(-0.5*x*x) * (1.0 / math.Sqrt(2.0*math.Pi))
+}
+
+type GELUOp struct {
+	input *graph.Node
+}
+
+func NewGELUOp(input *graph.Node) *GELUOp {
+	return &GELUOp{input: input}
+}
+
+// Forward: y_i = x_i * Φ(x_i) (активация GELU из BERT/GPT).
+func (op *GELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		result.Data[i] = x * geluNormalCDF(x)
+	}
+	return result
+}
+
+func (e *Engine) GELU(input *graph.Node) *graph.Node {
+	op := NewGELUOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+// Backward: d/dx [x·Φ(x)] = Φ(x) + x·φ(x).
+func (op *GELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		cdf := geluNormalCDF(x)
+		pdf := geluNormalPDF(x)
+		gradInput.Data[i] = grad.Data[i] * (cdf + x*pdf)
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
 type SoftmaxCrossEntropyOp struct {
 	input   *graph.Node
 	target  *tensor.Tensor
