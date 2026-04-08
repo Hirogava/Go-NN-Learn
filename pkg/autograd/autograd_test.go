@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 func feq(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
@@ -209,6 +209,30 @@ func TestReshape(t *testing.T) {
 	for _, v := range x.Grad.Data {
 		if !feq(v, 1) {
 			t.Fatal("reshape backward values")
+		}
+	}
+}
+
+func TestConcatenateBackward(t *testing.T) {
+	// Добавляем префикс пакета autograd.
+	e := autograd.NewEngine()
+
+	// n1 и n2 тоже должны создаваться через методы движка или с префиксом тензора
+	n1 := e.RequireGrad(tensor.Ones(2, 1))
+	n2 := e.RequireGrad(tensor.Ones(2, 1))
+
+	out := e.Concatenate([]*graph.Node{n1, n2}, 0)
+
+	gradOut := tensor.Ones(4, 1)
+	out.Operation.Backward(gradOut)
+
+	if n1.Grad == nil || n2.Grad == nil {
+		t.Fatal("Градиенты не дошли до родителей")
+	}
+
+	for i, g := range n1.Grad.Data {
+		if g != 1.0 {
+			t.Errorf("Ошибка в градиенте n1 у элемента %d: ожидалось 1.0, получили %f", i, g)
 		}
 	}
 }

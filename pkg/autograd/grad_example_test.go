@@ -1,10 +1,11 @@
 package autograd
 
 import (
+	"math"
 	"testing"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // TestExampleDotSumGradient строит примитивный граф y = sum(a * b) и проверяет его градиента.
@@ -43,4 +44,77 @@ func TestExampleDotSumGradient(t *testing.T) {
 			t.Fatalf("b.Grad[%d] = %v, want %v", i, b.Grad.Data[i], wantB[i])
 		}
 	}
+}
+
+// численный градиент
+func numericalGrad(f func(x *graph.Node) *graph.Node, x *tensor.Tensor, eps float64) *tensor.Tensor {
+	grad := tensor.Zeros(x.Shape...)
+	for i := range x.Data {
+		orig := x.Data[i]
+
+		x.Data[i] = orig + eps
+		y1 := SumTensor(f(&graph.Node{Value: x}).Value)
+
+		x.Data[i] = orig - eps
+		y2 := SumTensor(f(&graph.Node{Value: x}).Value)
+
+		grad.Data[i] = (y1 - y2) / (2 * eps)
+		x.Data[i] = orig
+	}
+	return grad
+}
+
+func SumTensor(t *tensor.Tensor) float64 {
+	s := 0.0
+	for _, v := range t.Data {
+		s += v
+	}
+	return s
+}
+
+// grad_check
+func gradCheck(t *testing.T, f func(x *graph.Node) *graph.Node, x *tensor.Tensor, eps, tol float64) {
+	node := &graph.Node{Value: x}
+	node.Grad = nil
+
+	// forward + backward
+	eng := NewEngine()
+	y := f(node)
+	eng.Backward(y)
+
+	// численный градиент
+	numGrad := numericalGrad(f, x, eps)
+
+	// сравнение
+	for i := range x.Data {
+		a := node.Grad.Data[i]
+		n := numGrad.Data[i]
+		if math.Abs(a-n) > tol {
+			t.Fatalf("grad check failed at index %d: analytic=%v, numeric=%v", i, a, n)
+		}
+	}
+}
+
+// тест Reshape
+func TestReshapeGradCheck(t *testing.T) {
+	x := tensor.Randn([]int{2, 3}, 42) // фиксированный seed
+	f := func(xn *graph.Node) *graph.Node {
+		eng := NewEngine()
+		return eng.Reshape(xn, []int{3, 2})
+	}
+
+	gradCheck(t, f, x, 1e-6, 1e-4)
+}
+
+// тест Transpose
+func TestTransposeGradCheck(t *testing.T) {
+	x := tensor.Randn([]int{2, 3}, 42)
+	f := func(xn *graph.Node) *graph.Node {
+
+		eng := NewEngine()
+		y := eng.Transpose(xn)
+		return eng.Sum(y) // скалярный выход
+	}
+
+	gradCheck(t, f, x, 1e-6, 1e-4)
 }

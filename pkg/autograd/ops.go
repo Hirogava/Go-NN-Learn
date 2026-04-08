@@ -1,9 +1,11 @@
 package autograd
 
 import (
+	"fmt"
+
 	"github.com/Hirogava/Go-NN-Learn/pkg/matrix"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // Add
@@ -72,8 +74,10 @@ type MatMul struct {
 	B       *tensor.Tensor
 }
 
-type Transpose struct {
+type TransposeOp struct {
 	Parents []*graph.Node
+	Perm    []int
+	InvPerm []int
 }
 
 func (op *MatMul) Backward(grad *tensor.Tensor) {
@@ -104,16 +108,24 @@ func (op *MatMul) Backward(grad *tensor.Tensor) {
 	op.Parents[1].Grad = gB
 }
 
-func (op *Transpose) Backward(grad *tensor.Tensor) {
-	if op.Parents[0].Grad == nil {
-		op.Parents[0].Grad = tensor.Zeros(op.Parents[0].Value.Shape...)
+func (op *TransposeOp) Backward(grad *tensor.Tensor) {
+
+	p := op.Parents[0]
+
+	gradIn, err := tensor.Transpose(grad)
+	if err != nil {
+		panic(err)
 	}
 
-	gradM := matrix.TensorToMatrix(grad)
-	gradTransposed, _ := matrix.Transposition(gradM)
-	gradTransposedT := matrix.MatrixToTensor(gradTransposed)
-	g, _ := tensor.Add(op.Parents[0].Grad, gradTransposedT)
-	op.Parents[0].Grad = g
+	if p.Grad == nil {
+		p.Grad = gradIn
+	} else {
+		g, err := tensor.Add(p.Grad, gradIn)
+		if err != nil {
+			panic(err)
+		}
+		p.Grad = g
+	}
 }
 
 func (e *Engine) MatMul(a, b *graph.Node) *graph.Node {
@@ -137,7 +149,7 @@ func (e *Engine) Transpose(a *graph.Node) *graph.Node {
 		return nil
 	}
 	val := matrix.MatrixToTensor(valM)
-	op := &Transpose{Parents: []*graph.Node{a}}
+	op := &TransposeOp{Parents: []*graph.Node{a}}
 	n := graph.NewNode(val, []*graph.Node{a}, op)
 	e.Nodes = append(e.Nodes, n)
 	return n
@@ -248,17 +260,18 @@ type ReshapeOp struct {
 
 func (op *ReshapeOp) Backward(grad *tensor.Tensor) {
 	p := op.Parents[0]
-	if p.Grad == nil {
-		p.Grad = tensor.Zeros(op.InShape...)
-	}
+
 	gradIn, err := tensor.Reshape(grad, op.InShape)
 	if err != nil {
-		return
+		panic(err)
 	}
-	g, _ := tensor.Add(p.Grad, gradIn)
-	p.Grad = g
-}
 
+	if p.Grad == nil {
+		p.Grad = gradIn
+	} else {
+		p.Grad, _ = tensor.Add(p.Grad, gradIn)
+	}
+}
 func (e *Engine) Reshape(a *graph.Node, newShape []int) *graph.Node {
 	val, err := tensor.Reshape(a.Value, newShape)
 	if err != nil {
@@ -272,4 +285,52 @@ func (e *Engine) Reshape(a *graph.Node, newShape []int) *graph.Node {
 	n := graph.NewNode(val, []*graph.Node{a}, op)
 	e.Nodes = append(e.Nodes, n)
 	return n
+}
+
+// Concatenate
+type ConcatenateOp struct {
+	parents []*graph.Node
+	axis    int
+}
+
+func (op *ConcatenateOp) Backward(grad *tensor.Tensor) {
+	offset := 0
+	for _, parent := range op.parents {
+		// Вырезаем кусок градиента, принадлежащий этому родителю
+		parentGradPart, _ := tensor.Slice(grad, op.axis, offset, parent.Value.Shape[op.axis])
+
+		if parent.Grad == nil {
+			parent.Grad = tensor.Zeros(parent.Value.Shape...)
+		}
+
+		// Накапливаем градиент (используем твой ops.Add)
+		// Внимание: твой ops.Add возвращает новый тензор, поэтому переприсваиваем
+		newGrad, _ := tensor.Add(parent.Grad, parentGradPart)
+		parent.Grad = newGrad
+
+		offset += parent.Value.Shape[op.axis]
+	}
+}
+
+func (e *Engine) Concatenate(inputs []*graph.Node, axis int) *graph.Node {
+	tensors := make([]*tensor.Tensor, len(inputs))
+	for i, n := range inputs {
+		tensors[i] = n.Value
+	}
+
+	// Прямой проход
+	resultValue, err := tensor.Concatenate(tensors, axis)
+	if err != nil {
+		panic(fmt.Sprintf("Concatenate error: %v", err))
+	}
+
+	op := &ConcatenateOp{
+		parents: inputs,
+		axis:    axis,
+	}
+
+	// Регистрация в графе
+	node := graph.NewNode(resultValue, inputs, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
 }
