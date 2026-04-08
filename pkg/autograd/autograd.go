@@ -189,6 +189,172 @@ func (op *TanhOp) Backward(grad *tensor.Tensor) {
 	op.input.Grad = gradInput
 }
 
+type SoftPlusOp struct {
+	input   *graph.Node
+	output  *tensor.Tensor
+	sigmoid *tensor.Tensor // d/dx softplus(x) = sigmoid(x)
+}
+
+func NewSoftPlusOp(input *graph.Node) *SoftPlusOp {
+	return &SoftPlusOp{input: input}
+}
+
+func (op *SoftPlusOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	sigmoid := tensor.Zeros(op.input.Value.Shape...)
+
+	// Стабильные вычисления без переполнений:
+	// softplus(x) = log(1 + exp(x))
+	// if x > 0:  softplus(x) = x + log(1 + exp(-x))
+	// else:      softplus(x) = log(1 + exp(x))
+	for i, x := range op.input.Value.Data {
+		if x >= 0 {
+			expNeg := math.Exp(-x)
+			// sigmoid(x) = 1 / (1 + exp(-x))
+			s := 1.0 / (1.0 + expNeg)
+			sigmoid.Data[i] = s
+			result.Data[i] = x + math.Log(1.0+expNeg)
+		} else {
+			expPos := math.Exp(x)
+			// sigmoid(x) = exp(x) / (1 + exp(x))
+			s := expPos / (1.0 + expPos)
+			sigmoid.Data[i] = s
+			result.Data[i] = math.Log(1.0 + expPos)
+		}
+	}
+
+	op.output = result
+	op.sigmoid = sigmoid
+	return result
+}
+
+func (e *Engine) SoftPlus(input *graph.Node) *graph.Node {
+	op := NewSoftPlusOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *SoftPlusOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		gradInput.Data[i] = grad.Data[i] * op.sigmoid.Data[i]
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+// ELUOp — Exponential Linear Unit: y = x if x > 0 else alpha*(exp(x)-1).
+type ELUOp struct {
+	input  *graph.Node
+	output *tensor.Tensor
+	Alpha  float64
+}
+
+func NewELUOp(input *graph.Node) *ELUOp {
+	return &ELUOp{input: input, Alpha: 1.0}
+}
+
+func (op *ELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	a := op.Alpha
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		if x > 0 {
+			result.Data[i] = x
+		} else {
+			result.Data[i] = a * (math.Exp(x) - 1)
+		}
+	}
+	op.output = result
+	return result
+}
+
+func (e *Engine) ELU(input *graph.Node) *graph.Node {
+	op := NewELUOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *ELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	a := op.Alpha
+	for i := range op.output.Data {
+		y := op.output.Data[i]
+		var d float64
+		switch {
+		case y > 0:
+			d = 1
+		case y < 0:
+			d = y + a
+		default:
+			d = a
+		}
+		gradInput.Data[i] = grad.Data[i] * d
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+// geluNormalCDF — Φ(x), CDF стандартного нормального распределения.
+// Используется связка с math.Erf (устойчива на краях и для больших |x|).
+func geluNormalCDF(x float64) float64 {
+	return 0.5 * (1.0 + math.Erf(x/math.Sqrt2))
+}
+
+// geluNormalPDF — плотность N(0,1) в точке x: exp(-x²/2) / √(2π).
+func geluNormalPDF(x float64) float64 {
+	return math.Exp(-0.5*x*x) * (1.0 / math.Sqrt(2.0*math.Pi))
+}
+
+type GELUOp struct {
+	input *graph.Node
+}
+
+func NewGELUOp(input *graph.Node) *GELUOp {
+	return &GELUOp{input: input}
+}
+
+// Forward: y_i = x_i * Φ(x_i) (активация GELU из BERT/GPT).
+func (op *GELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		result.Data[i] = x * geluNormalCDF(x)
+	}
+	return result
+}
+
+func (e *Engine) GELU(input *graph.Node) *graph.Node {
+	op := NewGELUOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+// Backward: d/dx [x·Φ(x)] = Φ(x) + x·φ(x).
+func (op *GELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		cdf := geluNormalCDF(x)
+		pdf := geluNormalPDF(x)
+		gradInput.Data[i] = grad.Data[i] * (cdf + x*pdf)
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
 type LeakyReLUOp struct {
 	input *graph.Node
 	slope float64
