@@ -247,6 +247,62 @@ func (op *SoftPlusOp) Backward(grad *tensor.Tensor) {
 	op.input.Grad = gradInput
 }
 
+// ELUOp — Exponential Linear Unit: y = x if x > 0 else alpha*(exp(x)-1).
+type ELUOp struct {
+	input  *graph.Node
+	output *tensor.Tensor
+	Alpha  float64
+}
+
+func NewELUOp(input *graph.Node) *ELUOp {
+	return &ELUOp{input: input, Alpha: 1.0}
+}
+
+func (op *ELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	a := op.Alpha
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		if x > 0 {
+			result.Data[i] = x
+		} else {
+			result.Data[i] = a * (math.Exp(x) - 1)
+		}
+	}
+	op.output = result
+	return result
+}
+
+func (e *Engine) ELU(input *graph.Node) *graph.Node {
+	op := NewELUOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *ELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	a := op.Alpha
+	for i := range op.output.Data {
+		y := op.output.Data[i]
+		var d float64
+		switch {
+		case y > 0:
+			d = 1
+		case y < 0:
+			d = y + a
+		default:
+			d = a
+		}
+		gradInput.Data[i] = grad.Data[i] * d
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
 type SoftmaxCrossEntropyOp struct {
 	input   *graph.Node
 	target  *tensor.Tensor
