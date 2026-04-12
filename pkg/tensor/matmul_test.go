@@ -4,6 +4,24 @@ import (
 	"testing"
 )
 
+func benchmarkTensorSquare(size int) (*Tensor, *Tensor) {
+	a := &Tensor{
+		Data:    make([]float64, size*size),
+		Shape:   []int{size, size},
+		Strides: []int{size, 1},
+	}
+	b := &Tensor{
+		Data:    make([]float64, size*size),
+		Shape:   []int{size, size},
+		Strides: []int{size, 1},
+	}
+	for i := range a.Data {
+		a.Data[i] = float64((i % 97) - 48)
+		b.Data[i] = float64((i % 89) - 44)
+	}
+	return a, b
+}
+
 func TestMatMul(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -329,6 +347,22 @@ func BenchmarkMatMulBlocked(b *testing.B) {
 	}
 }
 
+func BenchmarkMatMulBlockedV2(b *testing.B) {
+	size := 128
+	a := make([]float64, size*size)
+	bm := make([]float64, size*size)
+	c := make([]float64, size*size)
+	for i := range a {
+		a[i] = float64(i % 100)
+		bm[i] = float64(i % 100)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulBlockedV2(a, bm, c, size, size, size, chooseBlockSize(size, size, size))
+	}
+}
+
 func BenchmarkMatMulParallel(b *testing.B) {
 	// 256x256 для параллельного умножения
 	size := 256
@@ -343,5 +377,62 @@ func BenchmarkMatMulParallel(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		matmulParallelBlocked(a, bm, c, size, size, size)
+	}
+}
+
+func BenchmarkMatMulBlockedV1_1024(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	out := make([]float64, size*size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulBlocked(a.Data, c.Data, out, size, size, size)
+	}
+}
+
+func BenchmarkMatMulBlockedV2_1024(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	out := make([]float64, size*size)
+	blockSize := chooseBlockSize(size, size, size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulBlockedV2(a.Data, c.Data, out, size, size, size, blockSize)
+	}
+}
+
+func BenchmarkMatMulBlockedV2_1024_Block32(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	out := make([]float64, size*size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulBlockedV2(a.Data, c.Data, out, size, size, size, 32)
+	}
+}
+
+func BenchmarkMatMulBlockedV2_1024_Block64(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	out := make([]float64, size*size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulBlockedV2(a.Data, c.Data, out, size, size, size, 64)
+	}
+}
+
+func BenchmarkMatMulParallelBlockedV2_1024(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	out := make([]float64, size*size)
+	blockSize := chooseBlockSize(size, size, size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		matmulParallelBlockedV2(a.Data, c.Data, out, size, size, size, blockSize)
 	}
 }

@@ -12,7 +12,6 @@ const (
 	// Альтернативные размеры блоков для адаптивного выбора
 	BlockSizeSmall  = 32  // Для L1 кеша (малые матрицы)
 	BlockSizeMedium = 64  // Для L1/L2 кеша (средние матрицы)
-	BlockSizeLarge  = 128 // Для L2/L3 кеша (большие матрицы)
 	// Порог для использования параллельного умножения
 	ParallelThreshold = 128
 	// Порог для использования BLAS (если доступен)
@@ -55,19 +54,20 @@ func MatMul(a, b *Tensor) (*Tensor, error) {
 	matrixSize := m * n * p
 
 	if m >= ParallelThreshold || p >= ParallelThreshold {
-		// Параллельное блочное умножение для больших матриц
+		// Tiled MatMul v2 для больших матриц: worker по строкам + упаковка плиток B
 		blockSize := chooseBlockSize(m, n, p)
-		matmulParallelBlockedAdaptive(a.Data, b.Data, result.Data, m, n, p, blockSize)
+		matmulParallelBlockedV2(a.Data, b.Data, result.Data, m, n, p, blockSize)
 	} else if m >= BlockSizeSmall || p >= BlockSizeSmall {
-		// Блочное умножение с SIMD для средних матриц
+		// Cache-blocked MatMul v2 для средних матриц
 		blockSize := chooseBlockSize(m, n, p)
-		matmulBlockedSIMD(a.Data, b.Data, result.Data, m, n, p, blockSize)
+		matmulBlockedV2(a.Data, b.Data, result.Data, m, n, p, blockSize)
 	} else if matrixSize < 1000 {
 		// Простое оптимизированное умножение для очень малых матриц
 		matmulOptimized(a.Data, b.Data, result.Data, m, n, p)
 	} else {
-		// Блочное умножение для средних матриц
-		matmulBlocked(a.Data, b.Data, result.Data, m, n, p)
+		// Cache-blocked MatMul v2
+		blockSize := chooseBlockSize(m, n, p)
+		matmulBlockedV2(a.Data, b.Data, result.Data, m, n, p, blockSize)
 	}
 
 	return result, nil
@@ -88,13 +88,10 @@ func chooseBlockSize(m, n, p int) int {
 	}
 
 	// Эвристика выбора размера блока
-	if maxDim <= 128 {
-		return BlockSizeSmall // 32x32 блоки для малых матриц
-	} else if maxDim <= 512 {
-		return BlockSizeMedium // 64x64 блоки для средних матриц
-	} else {
-		return BlockSizeLarge // 128x128 блоки для больших матриц
+	if maxDim <= 256 {
+		return BlockSizeSmall
 	}
+	return BlockSizeMedium
 }
 
 // matmulOptimized - оптимизированное умножение для малых матриц
@@ -129,8 +126,8 @@ func matmulOptimized(a, b, c []float64, m, n, p int) {
 	}
 }
 
-// matmulBlocked - блочное умножение матриц (кеш-оптимизированное)
-// Использует 3-уровневую блочную структуру для оптимизации кеша
+// matmulBlocked - baseline версия блочного умножения.
+// Используется как эталон для benchmark'ов MatMul v2.
 func matmulBlocked(a, b, c []float64, m, n, p int) {
 	// Инициализируем результат нулями
 	for i := range c {
@@ -148,6 +145,28 @@ func matmulBlocked(a, b, c []float64, m, n, p int) {
 
 				// Микро-ядро: умножение блоков
 				matmulMicroKernel(a, b, c, ii, iEnd, kk, kEnd, jj, jEnd, n, p)
+			}
+		}
+	}
+}
+
+// matmulBlockedV2 - cache-blocked MatMul с упаковкой плитки B в транспонированный буфер.
+// Упаковка устраняет strided access по B и делает внутренний цикл плотным по памяти.
+func matmulBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
+	for i := range c {
+		c[i] = 0.0
+	}
+
+	packedB := make([]float64, blockSize*blockSize)
+	for jj := 0; jj < p; jj += blockSize {
+		jSize := min(blockSize, p-jj)
+		for kk := 0; kk < n; kk += blockSize {
+			kSize := min(blockSize, n-kk)
+			packBTileTransposed(b, packedB[:jSize*kSize], kk, jj, kSize, jSize, p)
+
+			for ii := 0; ii < m; ii += blockSize {
+				iEnd := min(ii+blockSize, m)
+				matmulKernelPackedB(a, c, packedB[:jSize*kSize], ii, iEnd, kk, kSize, jj, jSize, n, p)
 			}
 		}
 	}
@@ -339,50 +358,93 @@ func min(a, b int) int {
 	return b
 }
 
-// matmulBlockedSIMD - блочное умножение с использованием SIMD оптимизаций
-func matmulBlockedSIMD(a, b, c []float64, m, n, p int, blockSize int) {
-	// Инициализируем результат нулями
-	for i := range c {
-		c[i] = 0.0
-	}
-
-	// Блочное умножение с SIMD микро-ядром
-	for kk := 0; kk < n; kk += blockSize {
-		kEnd := min(kk+blockSize, n)
-		for ii := 0; ii < m; ii += blockSize {
-			iEnd := min(ii+blockSize, m)
-			for jj := 0; jj < p; jj += blockSize {
-				jEnd := min(jj+blockSize, p)
-
-				// SIMD-оптимизированное микро-ядро
-				MatMulSIMDKernel(a, b, c, m, n, p, ii, iEnd, kk, kEnd, jj, jEnd)
-			}
+func packBTileTransposed(b, packed []float64, kk, jj, kSize, jSize, p int) {
+	for j := 0; j < jSize; j++ {
+		dst := j * kSize
+		srcCol := jj + j
+		for k := 0; k < kSize; k++ {
+			packed[dst+k] = b[(kk+k)*p+srcCol]
 		}
 	}
 }
 
-// matmulParallelBlockedAdaptive - параллельное блочное умножение с адаптивным размером блока
-func matmulParallelBlockedAdaptive(a, b, c []float64, m, n, p int, blockSize int) {
-	// Инициализируем результат нулями
+// matmulBlockedSIMD сохранён как совместимый entrypoint для существующего кода.
+// В v2 он делегирует в новый cache-blocked kernel с упаковкой плитки B.
+func matmulBlockedSIMD(a, b, c []float64, m, n, p int, blockSize int) {
+	matmulBlockedV2(a, b, c, m, n, p, blockSize)
+}
+
+func matmulKernelPackedB(a, c, packedB []float64, iStart, iEnd, kk, kSize, jj, jSize, n, p int) {
+	for i := iStart; i < iEnd; i++ {
+		aRow := a[i*n+kk : i*n+kk+kSize]
+		cRow := c[i*p+jj : i*p+jj+jSize]
+
+		j := 0
+		for ; j <= jSize-4; j += 4 {
+			b0 := packedB[(j+0)*kSize : (j+1)*kSize]
+			b1 := packedB[(j+1)*kSize : (j+2)*kSize]
+			b2 := packedB[(j+2)*kSize : (j+3)*kSize]
+			b3 := packedB[(j+3)*kSize : (j+4)*kSize]
+
+			sum0 := cRow[j+0]
+			sum1 := cRow[j+1]
+			sum2 := cRow[j+2]
+			sum3 := cRow[j+3]
+
+			k := 0
+			for ; k <= kSize-4; k += 4 {
+				a0 := aRow[k+0]
+				a1 := aRow[k+1]
+				a2 := aRow[k+2]
+				a3 := aRow[k+3]
+
+				sum0 += a0*b0[k+0] + a1*b0[k+1] + a2*b0[k+2] + a3*b0[k+3]
+				sum1 += a0*b1[k+0] + a1*b1[k+1] + a2*b1[k+2] + a3*b1[k+3]
+				sum2 += a0*b2[k+0] + a1*b2[k+1] + a2*b2[k+2] + a3*b2[k+3]
+				sum3 += a0*b3[k+0] + a1*b3[k+1] + a2*b3[k+2] + a3*b3[k+3]
+			}
+			for ; k < kSize; k++ {
+				av := aRow[k]
+				sum0 += av * b0[k]
+				sum1 += av * b1[k]
+				sum2 += av * b2[k]
+				sum3 += av * b3[k]
+			}
+
+			cRow[j+0] = sum0
+			cRow[j+1] = sum1
+			cRow[j+2] = sum2
+			cRow[j+3] = sum3
+		}
+
+		for ; j < jSize; j++ {
+			sum := cRow[j]
+			bCol := packedB[j*kSize : (j+1)*kSize]
+			for k := 0; k < kSize; k++ {
+				sum += aRow[k] * bCol[k]
+			}
+			cRow[j] = sum
+		}
+	}
+}
+
+// matmulParallelBlockedV2 - параллельный tiled MatMul v2.
+// Каждый worker владеет диапазоном строк C и собственной упакованной плиткой B.
+func matmulParallelBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
 	for i := range c {
 		c[i] = 0.0
 	}
 
-	// Определяем количество воркеров
 	numWorkers := runtime.NumCPU()
 	if numWorkers > m {
 		numWorkers = m
 	}
-
-	// Разбиваем работу на блоки строк
 	blockRows := (m + numWorkers - 1) / numWorkers
 	if blockRows < blockSize {
 		blockRows = blockSize
 	}
 
 	var wg sync.WaitGroup
-
-	// Запускаем воркеры
 	for w := 0; w < numWorkers; w++ {
 		startRow := w * blockRows
 		if startRow >= m {
@@ -393,24 +455,20 @@ func matmulParallelBlockedAdaptive(a, b, c []float64, m, n, p int, blockSize int
 		wg.Add(1)
 		go func(start, end int) {
 			defer wg.Done()
-			matmulBlockedRangeAdaptive(a, b, c, start, end, n, p, blockSize)
+			packedB := make([]float64, blockSize*blockSize)
+			for jj := 0; jj < p; jj += blockSize {
+				jSize := min(blockSize, p-jj)
+				for kk := 0; kk < n; kk += blockSize {
+					kSize := min(blockSize, n-kk)
+					packBTileTransposed(b, packedB[:jSize*kSize], kk, jj, kSize, jSize, p)
+					for ii := start; ii < end; ii += blockSize {
+						iEnd := min(ii+blockSize, end)
+						matmulKernelPackedB(a, c, packedB[:jSize*kSize], ii, iEnd, kk, kSize, jj, jSize, n, p)
+					}
+				}
+			}
 		}(startRow, endRow)
 	}
 
 	wg.Wait()
-}
-
-// matmulBlockedRangeAdaptive - блочное умножение для диапазона строк с адаптивным размером блока
-func matmulBlockedRangeAdaptive(a, b, c []float64, rowStart, rowEnd, n, p int, blockSize int) {
-	for kk := 0; kk < n; kk += blockSize {
-		kEnd := min(kk+blockSize, n)
-		for ii := rowStart; ii < rowEnd; ii += blockSize {
-			iEnd := min(ii+blockSize, rowEnd)
-			for jj := 0; jj < p; jj += blockSize {
-				jEnd := min(jj+blockSize, p)
-				// SIMD микро-ядро
-				MatMulSIMDKernel(a, b, c, 0, n, p, ii, iEnd, kk, kEnd, jj, jEnd)
-			}
-		}
-	}
 }
