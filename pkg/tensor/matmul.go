@@ -10,8 +10,8 @@ import (
 const (
 	BlockSize = 64
 	// Альтернативные размеры блоков для адаптивного выбора
-	BlockSizeSmall  = 32  // Для L1 кеша (малые матрицы)
-	BlockSizeMedium = 64  // Для L1/L2 кеша (средние матрицы)
+	BlockSizeSmall  = 32 // Для L1 кеша (малые матрицы)
+	BlockSizeMedium = 64 // Для L1/L2 кеша (средние матрицы)
 	// Порог для использования параллельного умножения
 	ParallelThreshold = 128
 	// Порог для использования BLAS (если доступен)
@@ -368,10 +368,24 @@ func packBTileTransposed(b, packed []float64, kk, jj, kSize, jSize, p int) {
 	}
 }
 
-// matmulBlockedSIMD сохранён как совместимый entrypoint для существующего кода.
-// В v2 он делегирует в новый cache-blocked kernel с упаковкой плитки B.
+// matmulBlockedSIMD - историческая SIMD-реализация tiled matmul.
+// Сохраняется как отдельный путь для прямого вызова и обратной совместимости.
+// Основной MatMul при этом использует v2 и не зависит от этой функции.
 func matmulBlockedSIMD(a, b, c []float64, m, n, p int, blockSize int) {
-	matmulBlockedV2(a, b, c, m, n, p, blockSize)
+	for i := range c {
+		c[i] = 0.0
+	}
+
+	for kk := 0; kk < n; kk += blockSize {
+		kEnd := min(kk+blockSize, n)
+		for ii := 0; ii < m; ii += blockSize {
+			iEnd := min(ii+blockSize, m)
+			for jj := 0; jj < p; jj += blockSize {
+				jEnd := min(jj+blockSize, p)
+				MatMulSIMDKernel(a, b, c, m, n, p, ii, iEnd, kk, kEnd, jj, jEnd)
+			}
+		}
+	}
 }
 
 func matmulKernelPackedB(a, c, packedB []float64, iStart, iEnd, kk, kSize, jj, jSize, n, p int) {
