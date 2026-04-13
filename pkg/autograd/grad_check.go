@@ -121,3 +121,16 @@ func CheckGradientEngine(build func(e *Engine, inputs []*graph.Node) *graph.Node
 	}
 	return true
 }
+
+// LeakyReLUGradientCheckOK проверяет backward для LeakyReLU, y_i = max(slope·x_i, x_i),
+// через CheckGradientEngine. Значения входа лучше держать отличными от нуля: при x = 0
+// производная неоднозначна, а центральная разность даёт (1+slope)/2, тогда как ветвь x > 0
+// в реализации даёт множитель slope для x ≤ 0.
+func LeakyReLUGradientCheckOK(slope float64, data []float64, shape []int, eps, tol float64) bool {
+	t := &tensor.Tensor{Data: append([]float64(nil), data...), Shape: append([]int(nil), shape...)}
+	proto := graph.NewNode(t, nil, nil)
+	build := func(e *Engine, inputs []*graph.Node) *graph.Node {
+		return e.LeakyReLU(inputs[0], slope)
+	}
+	return CheckGradientEngine(build, []*graph.Node{proto}, eps, tol)
+}
