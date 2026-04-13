@@ -53,12 +53,15 @@ func NewTrainer(
 
 // Train содержит основной TrainLoop для обучения модели
 func (t *Trainer) Train() {
+	t.model.Train()
 	t.callbacks.OnTrainBegin(&t.context)
 	for epoch := 0; epoch < t.context.NumEpochs; epoch++ {
 		// Обновляем контекст для текущей эпохи и сбрасываем
 		// счётчик батчей
 		t.resetContext(epoch)
 
+		// Каждую эпоху включаем train-mode (после Eval() в OnEpochEnd прошлой эпохи, например валидация).
+		t.model.Train()
 		t.callbacks.OnEpochBegin(&t.context)
 
 		t.dataLoader.Reset() // Сбрасываем итератор батчей
