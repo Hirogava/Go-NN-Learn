@@ -5,18 +5,23 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/api"
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 type identityLayer struct{}
 
 func (l *identityLayer) Forward(x *graph.Node) *graph.Node { return x }
 func (l *identityLayer) Params() []*graph.Node             { return nil }
+func (l *identityLayer) Train()                            {}
+func (l *identityLayer) Eval()                             {}
 
 type simpleModule struct {
 	layers []layers.Layer
 }
+
+func (s *simpleModule) Train() {}
+func (s *simpleModule) Eval()  {}
 
 func (s *simpleModule) Layers() []layers.Layer {
 	return s.layers

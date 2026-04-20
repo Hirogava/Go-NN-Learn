@@ -6,8 +6,8 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/api"
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // mockModule реализует слои.Модуль для тестов.
@@ -24,6 +24,10 @@ func (m *mockModule) Forward(x *graph.Node) *graph.Node { return x }
 
 // Params возвращает указатели на узлы параметров.
 func (m *mockModule) Params() []*graph.Node { return m.params }
+
+func (m *mockModule) Train() {}
+
+func (m *mockModule) Eval() {}
 
 // newMockParam удобство для тестов.
 func newMockParam(vals []float64, shape []int) *graph.Node {
