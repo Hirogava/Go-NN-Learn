@@ -12,8 +12,8 @@ const CurrentArtifactVersion = "v1"
 
 // ошибки
 var (
-	ErrArtifactMismatch = errors.New("artifact version mismatch")
 	ErrInvalidArtifact  = errors.New("invalid artifact")
+	ErrArtifactMismatch = errors.New("artifact version mismatch")
 )
 
 // главный объект (файл модели)
@@ -25,9 +25,10 @@ type Artifact struct {
 
 // всё что нужно для восстановления модели
 type Metadata struct {
-	Classes   []string    `json:"classes"`
-	Vocab     *text.Vocab `json:"vocab"`
-	HiddenDim int         `json:"hidden_dim"`
+	Classes   []string              `json:"classes"`
+	Vocab     *text.Vocab           `json:"vocab"`
+	HiddenDim int                   `json:"hidden_dim"`
+	TextCfg   text.PreprocessConfig `json:"text_cfg"` // новое
 }
 
 // save

@@ -3,8 +3,8 @@ package autograd
 import (
 	"math"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // CheckGradientEngine проверяет градиенты для готовых структур Engine/Node.
