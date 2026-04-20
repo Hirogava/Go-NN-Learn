@@ -11,7 +11,7 @@ func TestELUGradCheck(t *testing.T) {
 	x := newTensor([]float64{1.0, -0.5, 0.0, -2.0, 0.3}, 5)
 
 	build := func(e *Engine, inputs []*graph.Node) *graph.Node {
-		return e.ELU(inputs[0])
+		return e.ELU(inputs[0], 1.0)
 	}
 
 	inputNode := graph.NewNode(x, nil, nil)
@@ -24,7 +24,7 @@ func TestELUGradCheckMatrix(t *testing.T) {
 	x := tensor.Randn([]int{5, 4}, 202)
 
 	build := func(e *Engine, inputs []*graph.Node) *graph.Node {
-		return e.ELU(inputs[0])
+		return e.ELU(inputs[0], 1.0)
 	}
 
 	inputNode := graph.NewNode(x, nil, nil)
