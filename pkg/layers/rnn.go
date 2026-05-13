@@ -130,6 +130,9 @@ func (r *RNN) Params() []*graph.Node {
 	return params
 }
 
+func (r *RNN) Train() {}
+func (r *RNN) Eval()  {}
+
 // ResetHiddenState сбрасывает скрытое состояние RNN.
 // Полезно при начале новой последовательности.
 func (r *RNN) ResetHiddenState() {

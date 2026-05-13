@@ -260,3 +260,252 @@ func (op *SoftmaxCrossEntropyOp) Backward(grad *tensor.Tensor) {
 	}
 	op.input.Grad = gradInput
 }
+
+type LeakyReLUOp struct {
+	input *graph.Node
+	slope float64
+}
+
+func NewLeakyReLUOp(input *graph.Node, slope float64) *LeakyReLUOp {
+	return &LeakyReLUOp{input: input, slope: slope}
+}
+
+func (op *LeakyReLUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		val := op.input.Value.Data[i]
+		if val > 0 {
+			result.Data[i] = val
+		} else {
+			result.Data[i] = op.slope * val
+		}
+	}
+	return result
+}
+
+func (e *Engine) LeakyReLU(input *graph.Node, slope float64) *graph.Node {
+	op := NewLeakyReLUOp(input, slope)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *LeakyReLUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		if op.input.Value.Data[i] > 0 {
+			gradInput.Data[i] = grad.Data[i]
+		} else {
+			gradInput.Data[i] = grad.Data[i] * op.slope
+		}
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+type ELUOp struct {
+	input *graph.Node
+	alpha float64
+}
+
+func NewELUOp(input *graph.Node, alpha float64) *ELUOp {
+	return &ELUOp{input: input, alpha: alpha}
+}
+
+func (op *ELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		val := op.input.Value.Data[i]
+		if val > 0 {
+			result.Data[i] = val
+		} else {
+			result.Data[i] = op.alpha * (math.Exp(val) - 1.0)
+		}
+	}
+	return result
+}
+
+func (e *Engine) ELU(input *graph.Node, alpha float64) *graph.Node {
+	op := NewELUOp(input, alpha)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *ELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		val := op.input.Value.Data[i]
+		if val > 0 {
+			gradInput.Data[i] = grad.Data[i]
+		} else {
+			gradInput.Data[i] = grad.Data[i] * op.alpha * math.Exp(val)
+		}
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+type SoftPlusOp struct {
+	input *graph.Node
+}
+
+func NewSoftPlusOp(input *graph.Node) *SoftPlusOp {
+	return &SoftPlusOp{input: input}
+}
+
+func (op *SoftPlusOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		val := op.input.Value.Data[i]
+		if val > 20 {
+			result.Data[i] = val
+		} else {
+			result.Data[i] = math.Log(1.0 + math.Exp(val))
+		}
+	}
+	return result
+}
+
+func (e *Engine) SoftPlus(input *graph.Node) *graph.Node {
+	op := NewSoftPlusOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *SoftPlusOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		val := op.input.Value.Data[i]
+		s := 1.0 / (1.0 + math.Exp(-val))
+		gradInput.Data[i] = grad.Data[i] * s
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+type GELUOp struct {
+	input *graph.Node
+}
+
+func NewGELUOp(input *graph.Node) *GELUOp {
+	return &GELUOp{input: input}
+}
+
+func (op *GELUOp) Forward() *tensor.Tensor {
+	result := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		inner := math.Sqrt(2.0/math.Pi) * (x + 0.044715*math.Pow(x, 3))
+		result.Data[i] = 0.5 * x * (1.0 + math.Tanh(inner))
+	}
+	return result
+}
+
+func (e *Engine) GELU(input *graph.Node) *graph.Node {
+	op := NewGELUOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *GELUOp) Backward(grad *tensor.Tensor) {
+	gradInput := tensor.Zeros(op.input.Value.Shape...)
+	for i := range op.input.Value.Data {
+		x := op.input.Value.Data[i]
+		cdf_inner := math.Sqrt(2.0/math.Pi) * (x + 0.044715*math.Pow(x, 3))
+		t := math.Tanh(cdf_inner)
+		term1 := 0.5 * (1.0 + t)
+		term2 := 0.5 * x * (1.0 - t*t) * math.Sqrt(2.0/math.Pi) * (1.0 + 3.0*0.044715*x*x)
+		gradInput.Data[i] = grad.Data[i] * (term1 + term2)
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}
+
+type SoftmaxOp struct {
+	input  *graph.Node
+	output *tensor.Tensor
+}
+
+func NewSoftmaxOp(input *graph.Node) *SoftmaxOp {
+	return &SoftmaxOp{input: input}
+}
+
+func (op *SoftmaxOp) Forward() *tensor.Tensor {
+	in := op.input.Value
+	if len(in.Shape) != 2 {
+		panic("Softmax expects 2D tensor (batch, classes)")
+	}
+	rows, cols := in.Shape[0], in.Shape[1]
+	result := tensor.Zeros(in.Shape...)
+
+	for i := 0; i < rows; i++ {
+		maxVal := in.Data[i*cols]
+		for j := 1; j < cols; j++ {
+			if in.Data[i*cols+j] > maxVal {
+				maxVal = in.Data[i*cols+j]
+			}
+		}
+
+		sumExp := 0.0
+		for j := 0; j < cols; j++ {
+			val := math.Exp(in.Data[i*cols+j] - maxVal)
+			result.Data[i*cols+j] = val
+			sumExp += val
+		}
+
+		for j := 0; j < cols; j++ {
+			result.Data[i*cols+j] /= sumExp
+		}
+	}
+	op.output = result
+	return result
+}
+
+func (e *Engine) Softmax(input *graph.Node) *graph.Node {
+	op := NewSoftmaxOp(input)
+	result := op.Forward()
+	node := graph.NewNode(result, []*graph.Node{input}, op)
+	e.Nodes = append(e.Nodes, node)
+	return node
+}
+
+func (op *SoftmaxOp) Backward(grad *tensor.Tensor) {
+	rows, cols := op.output.Shape[0], op.output.Shape[1]
+	gradInput := tensor.Zeros(op.output.Shape...)
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			sj := op.output.Data[i*cols+j]
+			sum := 0.0
+			for k := 0; k < cols; k++ {
+				sk := op.output.Data[i*cols+k]
+				gk := grad.Data[i*cols+k]
+				if k == j {
+					sum += gk * sj * (1.0 - sj)
+				} else {
+					sum -= gk * sk * sj
+				}
+			}
+			gradInput.Data[i*cols+j] = sum
+		}
+	}
+	if op.input.Grad == nil {
+		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+	}
+	op.input.Grad = gradInput
+}

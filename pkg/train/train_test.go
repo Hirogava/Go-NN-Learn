@@ -21,6 +21,9 @@ func (f *fakeLayer) Params() []*graph.Node { return f.params }
 
 func (f *fakeLayer) Forward(x *graph.Node) *graph.Node { return x }
 
+func (f *fakeLayer) Train() {}
+func (f *fakeLayer) Eval()  {}
+
 // простой фейковый модель, хранит последний предикт как узел
 type fakeModel struct {
 	lastPred *graph.Node
@@ -28,7 +31,8 @@ type fakeModel struct {
 
 func (m *fakeModel) Forward(n *graph.Node) *graph.Node {
 	// всегда возвращаем предсказание 2.0 (чтобы совпадало с таргетом в тесте)
-	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}}, nil, nil)
+	// Форма [1, 1] чтобы соответствовать батчу из DataLoader
+	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}, Strides: []int{1, 1}}, nil, nil)
 	return m.lastPred
 }
 
@@ -45,6 +49,9 @@ func (m *fakeModel) Params() []*graph.Node {
 	}
 	return []*graph.Node{m.lastPred}
 }
+
+func (m *fakeModel) Train() {}
+func (m *fakeModel) Eval()  {}
 
 // фейковый оптимизатор для проверки вызова Step
 type fakeOpt struct {
@@ -71,8 +78,8 @@ func TestProcessBatch_ComputesLossAndStepsOptimizer(t *testing.T) {
 
 	// батч: фича 1.0, таргет 2.0 -> модель вернёт 2.0, метрика accuracy должна пройти
 	batch := &dataloader.Batch{
-		Features: &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1}},
-		Targets:  &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}},
+		Features: &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1, 1}, Strides: []int{1, 1}},
+		Targets:  &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}, Strides: []int{1, 1}},
 	}
 
 	if err := tr.processBatch(batch); err != nil {
@@ -122,7 +129,7 @@ func TestNewTrainerFromConfig_CreatesTrainer(t *testing.T) {
 		&autograd.MSELossOp{},
 		scheduler,
 		metrics.NewMAE(),
-		NewCallbackList(),
+		*NewCallbackList(),
 	)
 
 	if tr == nil {
@@ -163,7 +170,7 @@ func TestTrainerFromConfig_Deterministic(t *testing.T) {
 		&autograd.MSELossOp{},
 		optimizers.NewStepLR(0.01, 0.5, 1),
 		metrics.NewMAE(),
-		NewCallbackList(),
+		*NewCallbackList(),
 	)
 	tr2 := NewTrainerFromConfig(
 		cfg,
@@ -173,7 +180,7 @@ func TestTrainerFromConfig_Deterministic(t *testing.T) {
 		&autograd.MSELossOp{},
 		optimizers.NewStepLR(0.01, 0.5, 1),
 		metrics.NewMAE(),
-		NewCallbackList(),
+		*NewCallbackList(),
 	)
 
 	batch1 := dl1.Next()

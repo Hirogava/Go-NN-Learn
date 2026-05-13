@@ -33,6 +33,14 @@ func (m *SimpleModel) Layers() []layers.Layer {
 	return []layers.Layer{m.layer}
 }
 
+func (m *SimpleModel) Train() {
+	m.layer.Train()
+}
+
+func (m *SimpleModel) Eval() {
+	m.layer.Eval()
+}
+
 // Example_basicTrainingLoop демонстрирует базовый цикл обучения с колбэками
 func Example_basicTrainingLoop() {
 	// Создаем модель

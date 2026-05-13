@@ -31,12 +31,12 @@ func SetGlobalSeed(seed int64) {
 func NewTrainerFromConfig(
 	cfg *TrainerConfig,
 	model layers.Module,
-	dataLoader dataloader.DataLoader,
+	dataLoader *dataloader.DataLoader,
 	opt optimizers.Optimizer,
 	lossFn autograd.LossOp,
 	lrScheduler optimizers.LearningRateScheduler,
 	metric metrics.Metric,
-	callbacks *CallbackList,
+	callbacks CallbackList,
 ) *Trainer {
 	SetGlobalSeed(cfg.Seed)
 	return NewTrainer(
