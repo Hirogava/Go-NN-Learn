@@ -34,7 +34,13 @@ type fakeModel struct {
 
 func (m *fakeModel) Forward(n *graph.Node) *graph.Node {
 	// всегда возвращаем предсказание 2.0 (чтобы совпадало с таргетом в тесте)
-	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}}, nil, nil)
+	// подстраиваем форму под входной батч (batch_size, 1)
+	batchSize := n.Value.Shape[0]
+	data := make([]float64, batchSize)
+	for i := range data {
+		data[i] = 2.0
+	}
+	m.lastPred = graph.NewNode(&tensor.Tensor{Data: data, Shape: []int{batchSize, 1}}, nil, nil)
 	return m.lastPred
 }
 
@@ -80,8 +86,8 @@ func TestProcessBatch_ComputesLossAndStepsOptimizer(t *testing.T) {
 
 	// батч: фича 1.0, таргет 2.0 -> модель вернёт 2.0, метрика accuracy должна пройти
 	batch := &dataloader.Batch{
-		Features: &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1}},
-		Targets:  &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}},
+		Features: &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1, 1}},
+		Targets:  &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}},
 	}
 
 	if err := tr.processBatch(batch); err != nil {

@@ -107,6 +107,9 @@ func (d *Dense) Params() []*graph.Node {
 	return []*graph.Node{d.weights, d.bias}
 }
 
+func (d *Dense) Train() {}
+func (d *Dense) Eval()  {}
+
 type denseOp struct {
 	x *graph.Node
 	w *graph.Node

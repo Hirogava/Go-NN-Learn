@@ -144,6 +144,9 @@ func (c *Conv2D) Params() []*graph.Node {
 	return []*graph.Node{c.weights, c.bias}
 }
 
+func (c *Conv2D) Train() {}
+func (c *Conv2D) Eval()  {}
+
 func (c *Conv2D) GetInChannels() int {
 	return c.inChannels
 }
