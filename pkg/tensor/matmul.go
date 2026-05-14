@@ -2,7 +2,6 @@ package tensor
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 )
 
@@ -204,34 +203,26 @@ func matmulParallelBlocked(a, b, c []float64, m, n, p int) {
 		c[i] = 0.0
 	}
 
-	// Определяем количество воркеров (по числу ядер)
-	numWorkers := runtime.NumCPU()
-	if numWorkers > m {
-		numWorkers = m
-	}
-
-	// Разбиваем работу на блоки строк
-	blockRows := (m + numWorkers - 1) / numWorkers
-	if blockRows < BlockSize {
-		blockRows = BlockSize
-	}
+	numWorkers := matmulWorkerCount(m, BlockSize)
+	blockRows := matmulChunkRows(m, numWorkers, BlockSize)
+	scheduler := newMatmulRowScheduler(m, blockRows)
 
 	var wg sync.WaitGroup
 
 	// Запускаем воркеры
 	for w := 0; w < numWorkers; w++ {
-		startRow := w * blockRows
-		if startRow >= m {
-			break
-		}
-		endRow := min((w+1)*blockRows, m)
-
 		wg.Add(1)
-		go func(start, end int) {
+		go func() {
 			defer wg.Done()
-			// Блочное умножение для диапазона строк
-			matmulBlockedRange(a, b, c, start, end, n, p)
-		}(startRow, endRow)
+			for {
+				start, end, ok := scheduler.next()
+				if !ok {
+					return
+				}
+				// Блочное умножение для диапазона строк
+				matmulBlockedRange(a, b, c, start, end, n, p)
+			}
+		}()
 	}
 
 	wg.Wait()
@@ -449,39 +440,35 @@ func matmulParallelBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
 		c[i] = 0.0
 	}
 
-	numWorkers := runtime.NumCPU()
-	if numWorkers > m {
-		numWorkers = m
-	}
-	blockRows := (m + numWorkers - 1) / numWorkers
-	if blockRows < blockSize {
-		blockRows = blockSize
-	}
+	numWorkers := matmulWorkerCount(m, blockSize)
+	blockRows := matmulChunkRows(m, numWorkers, blockSize)
+	scheduler := newMatmulRowScheduler(m, blockRows)
 
 	var wg sync.WaitGroup
 	for w := 0; w < numWorkers; w++ {
-		startRow := w * blockRows
-		if startRow >= m {
-			break
-		}
-		endRow := min((w+1)*blockRows, m)
-
 		wg.Add(1)
-		go func(start, end int) {
+		go func() {
 			defer wg.Done()
 			packedB := make([]float64, blockSize*blockSize)
-			for jj := 0; jj < p; jj += blockSize {
-				jSize := min(blockSize, p-jj)
-				for kk := 0; kk < n; kk += blockSize {
-					kSize := min(blockSize, n-kk)
-					packBTileTransposed(b, packedB[:jSize*kSize], kk, jj, kSize, jSize, p)
-					for ii := start; ii < end; ii += blockSize {
-						iEnd := min(ii+blockSize, end)
-						matmulKernelPackedB(a, c, packedB[:jSize*kSize], ii, iEnd, kk, kSize, jj, jSize, n, p)
+			for {
+				start, end, ok := scheduler.next()
+				if !ok {
+					return
+				}
+
+				for jj := 0; jj < p; jj += blockSize {
+					jSize := min(blockSize, p-jj)
+					for kk := 0; kk < n; kk += blockSize {
+						kSize := min(blockSize, n-kk)
+						packBTileTransposed(b, packedB[:jSize*kSize], kk, jj, kSize, jSize, p)
+						for ii := start; ii < end; ii += blockSize {
+							iEnd := min(ii+blockSize, end)
+							matmulKernelPackedB(a, c, packedB[:jSize*kSize], ii, iEnd, kk, kSize, jj, jSize, n, p)
+						}
 					}
 				}
 			}
-		}(startRow, endRow)
+		}()
 	}
 
 	wg.Wait()

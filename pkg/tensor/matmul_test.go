@@ -1,6 +1,9 @@
 package tensor
 
 import (
+	"fmt"
+	"runtime"
+	"sync"
 	"testing"
 )
 
@@ -347,6 +350,92 @@ func BenchmarkMatMulBlocked(b *testing.B) {
 	}
 }
 
+func TestMatMulLargeMatchesAcrossGOMAXPROCS(t *testing.T) {
+	a, b := benchmarkTensorSquare(192)
+
+	previous := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(previous)
+
+	gotSingle, err := MatMul(a, b)
+	if err != nil {
+		t.Fatalf("MatMul() with GOMAXPROCS=1 error = %v", err)
+	}
+
+	runtime.GOMAXPROCS(4)
+	gotParallel, err := MatMul(a, b)
+	if err != nil {
+		t.Fatalf("MatMul() with GOMAXPROCS=4 error = %v", err)
+	}
+
+	if !shapesEqual(gotSingle.Shape, gotParallel.Shape) {
+		t.Fatalf("shape mismatch: single=%v parallel=%v", gotSingle.Shape, gotParallel.Shape)
+	}
+
+	for i := range gotSingle.Data {
+		if gotSingle.Data[i] != gotParallel.Data[i] {
+			t.Fatalf("data mismatch at %d: single=%v parallel=%v", i, gotSingle.Data[i], gotParallel.Data[i])
+		}
+	}
+}
+
+func TestMatMulConcurrentLarge(t *testing.T) {
+	a, b := benchmarkTensorSquare(192)
+
+	previous := runtime.GOMAXPROCS(4)
+	defer runtime.GOMAXPROCS(previous)
+
+	expected, err := MatMul(a, b)
+	if err != nil {
+		t.Fatalf("MatMul() expected result error = %v", err)
+	}
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 8)
+
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			got, err := MatMul(a, b)
+			if err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
+				return
+			}
+
+			for idx := range expected.Data {
+				if got.Data[idx] != expected.Data[idx] {
+					select {
+					case errCh <- &matmulMismatchError{index: idx, got: got.Data[idx], want: expected.Data[idx]}:
+					default:
+					}
+					return
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	if err := <-errCh; err != nil {
+		t.Fatal(err)
+	}
+}
+
+type matmulMismatchError struct {
+	index int
+	got   float64
+	want  float64
+}
+
+func (e *matmulMismatchError) Error() string {
+	return fmt.Sprintf("matmul mismatch at %d: got %v want %v", e.index, e.got, e.want)
+}
+
 func BenchmarkMatMulBlockedV2(b *testing.B) {
 	size := 128
 	a := make([]float64, size*size)
@@ -434,5 +523,24 @@ func BenchmarkMatMulParallelBlockedV2_1024(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		matmulParallelBlockedV2(a.Data, c.Data, out, size, size, size, blockSize)
+	}
+}
+
+func BenchmarkMatMulParallelBlockedV2_1024_GOMAXPROCS(b *testing.B) {
+	size := 1024
+	a, c := benchmarkTensorSquare(size)
+	blockSize := chooseBlockSize(size, size, size)
+
+	for _, procs := range []int{1, 2, 4} {
+		b.Run(fmt.Sprintf("procs=%d", procs), func(b *testing.B) {
+			previous := runtime.GOMAXPROCS(procs)
+			defer runtime.GOMAXPROCS(previous)
+
+			out := make([]float64, size*size)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				matmulParallelBlockedV2(a.Data, c.Data, out, size, size, size, blockSize)
+			}
+		})
 	}
 }
