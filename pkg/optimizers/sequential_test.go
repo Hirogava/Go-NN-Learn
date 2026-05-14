@@ -11,10 +11,12 @@ import (
 type addLayer struct {
 	v      float64
 	params []*graph.Node
+	trains int
+	evals  int
 }
 
-func (l *addLayer) Train() {}
-func (l *addLayer) Eval()  {}
+func (l *addLayer) Train() { l.trains++ }
+func (l *addLayer) Eval()  { l.evals++ }
 
 func (a *addLayer) Forward(x *graph.Node) *graph.Node {
 	in := x.Value
@@ -70,6 +72,46 @@ func TestSequentialForwardAndParams(t *testing.T) {
 	}
 	if all[0].Value.Data[0] != 1 || all[1].Value.Data[0] != 3 {
 		t.Fatalf("Params content mismatch: %+v", all)
+	}
+}
+
+func TestSequentialAddLayer(t *testing.T) {
+	l1 := &addLayer{v: 1.0}
+	l2 := &addLayer{v: 2.0}
+
+	seq := optimizers.NewSequential(l1)
+	seq.AddLayer(l2)
+
+	in := &graph.Node{
+		Value: &tensor.Tensor{
+			Data:    []float64{10.0},
+			Shape:   []int{1},
+			Strides: []int{1},
+		},
+	}
+
+	out := seq.Forward(in)
+	if out == nil || len(out.Value.Data) == 0 {
+		t.Fatal("Forward returned nil or empty output")
+	}
+	if got, want := out.Value.Data[0], 13.0; got != want {
+		t.Fatalf("Forward result mismatch after AddLayer: got %v want %v", got, want)
+	}
+}
+
+func TestSequentialTrainEval(t *testing.T) {
+	l1 := &addLayer{v: 1.0}
+	l2 := &addLayer{v: 2.0}
+	seq := optimizers.NewSequential(l1, l2)
+
+	seq.Train()
+	seq.Eval()
+
+	if l1.trains != 1 || l2.trains != 1 {
+		t.Fatalf("Train was not propagated to all layers: l1=%d l2=%d", l1.trains, l2.trains)
+	}
+	if l1.evals != 1 || l2.evals != 1 {
+		t.Fatalf("Eval was not propagated to all layers: l1=%d l2=%d", l1.evals, l2.evals)
 	}
 }
 

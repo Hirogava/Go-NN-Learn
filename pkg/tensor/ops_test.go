@@ -5,6 +5,92 @@ import (
 	"testing"
 )
 
+func TestBroadcasting(t *testing.T) {
+	cases := []struct {
+		name      string
+		a         *Tensor
+		b         *Tensor
+		want      []float64
+		wantShape []int
+		op        func(a, b *Tensor) (*Tensor, error)
+	}{
+		{
+			name: "[2,1,3] * [1,4,1]",
+			a: &Tensor{
+				Data:    []float64{1, 2, 3, 4, 5, 6},
+				Shape:   []int{2, 1, 3},
+				Strides: []int{3, 3, 1},
+			},
+			b: &Tensor{
+				Data:    []float64{10, 20, 30, 40},
+				Shape:   []int{1, 4, 1},
+				Strides: []int{4, 1, 1},
+			},
+			// want: [a0*b0, a1*b0, a2*b0, a0*b1, a1*b1, a2*b1, ...] по row-major
+			want: []float64{
+				10, 20, 30, // [0,0,0:2] * 10
+				20, 40, 60, // [0,0,0:2] * 20
+				30, 60, 90, // [0,0,0:2] * 30
+				40, 80, 120, // [0,0,0:2] * 40
+				40, 50, 60, // [1,0,0:2] * 10
+				80, 100, 120, // [1,0,0:2] * 20
+				120, 150, 180, // [1,0,0:2] * 30
+				160, 200, 240, // [1,0,0:2] * 40
+			},
+			wantShape: []int{2, 4, 3},
+			op:        Mul,
+		},
+		{
+			name: "[2,2] - [2,1]",
+			a: &Tensor{
+				Data:    []float64{5, 6, 7, 8},
+				Shape:   []int{2, 2},
+				Strides: []int{2, 1},
+			},
+			b: &Tensor{
+				Data:    []float64{1, 2},
+				Shape:   []int{2, 1},
+				Strides: []int{1, 1},
+			},
+			want:      []float64{4, 5, 5, 6},
+			wantShape: []int{2, 2},
+			op:        Sub,
+		},
+		{
+			name: "[2,2] / [1,2]",
+			a: &Tensor{
+				Data:    []float64{8, 6, 4, 2},
+				Shape:   []int{2, 2},
+				Strides: []int{2, 1},
+			},
+			b: &Tensor{
+				Data:    []float64{2, 2},
+				Shape:   []int{1, 2},
+				Strides: []int{2, 1},
+			},
+			want:      []float64{4, 3, 2, 1},
+			wantShape: []int{2, 2},
+			op:        Div,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := c.op(c.a, c.b)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !shapesEqual(got.Shape, c.wantShape) {
+				t.Errorf("shape: got %v, want %v", got.Shape, c.wantShape)
+			}
+			for i := range c.want {
+				if got.Data[i] != c.want[i] {
+					t.Errorf("data[%d]: got %v, want %v", i, got.Data[i], c.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestAdd(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -664,6 +750,41 @@ func TestFMAOperation(t *testing.T) {
 	for i := range result {
 		if math.Abs(result[i]-expected[i]) > 1e-10 {
 			t.Errorf("индекс %d: получено %f, ожидалось %f", i, result[i], expected[i])
+		}
+	}
+}
+
+func TestConcatenate(t *testing.T) {
+	// Создаем два тензора 2x2
+	t1 := Zeros(2, 2)
+	for i := range t1.Data {
+		t1.Data[i] = 1.0
+	}
+
+	t2 := Zeros(2, 2)
+	for i := range t2.Data {
+		t2.Data[i] = 2.0
+	}
+
+	// Клеим по строкам (axis 0) -> результат должен быть 4x2
+	res, err := Concatenate([]*Tensor{t1, t2}, 0)
+	if err != nil {
+		t.Fatalf("Concatenate failed: %v", err)
+	}
+
+	if res.Shape[0] != 4 || res.Shape[1] != 2 {
+		t.Errorf("Wrong shape: %v", res.Shape)
+	}
+
+	// Проверяем данные: первые 4 элемента — 1.0, вторые 4 — 2.0
+	for i := 0; i < 4; i++ {
+		if res.Data[i] != 1.0 {
+			t.Errorf("Expected 1.0 at %d", i)
+		}
+	}
+	for i := 4; i < 8; i++ {
+		if res.Data[i] != 2.0 {
+			t.Errorf("Expected 2.0 at %d", i)
 		}
 	}
 }

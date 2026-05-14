@@ -6,8 +6,8 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/api"
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // mockModule реализует слои.Модуль для тестов.
