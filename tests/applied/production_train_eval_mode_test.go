@@ -1,4 +1,4 @@
-package applied
+package applied_test
 
 import (
 	"math"
@@ -22,17 +22,17 @@ type ProdModel struct {
 	eng  *autograd.Engine
 }
 
-func initWeights(w []float64) {
+func prodInitWeights(w []float64) {
 	for i := range w {
 		w[i] = rand.NormFloat64() * 0.01
 	}
 }
 
 func NewProdModel(eng *autograd.Engine, in, hidden, out int) *ProdModel {
-	d1 := layers.NewDense(in, hidden, initWeights)
+	d1 := layers.NewDense(in, hidden, prodInitWeights)
 	bn := layers.NewBatchNorm(hidden, eng)
 	drop := layers.NewDropout(0.5)
-	d2 := layers.NewDense(hidden, out, initWeights)
+	d2 := layers.NewDense(hidden, out, prodInitWeights)
 	return &ProdModel{d1: d1, bn: bn, drop: drop, d2: d2, eng: eng}
 }
 
@@ -59,7 +59,7 @@ func (m *ProdModel) Eval() {
 	m.d2.Eval()
 }
 
-func copySlice(src []float64) []float64 {
+func prodCopySlice(src []float64) []float64 {
 	if src == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func TestProductionTrainEvalMode_Product(t *testing.T) {
 	// 1) Eval before training -> baseline inference
 	model.Eval()
 	outEvalBefore := model.Forward(inputNode)
-	vEvalBefore := copySlice(outEvalBefore.Value.Data)
+	vEvalBefore := prodCopySlice(outEvalBefore.Value.Data)
 	t.Logf("[инфо] до обучения (Eval) / before training (Eval): %v", vEvalBefore)
 
 	// 2) Training phase (only forward passes to update BN running stats and use Dropout)
@@ -114,8 +114,8 @@ func TestProductionTrainEvalMode_Product(t *testing.T) {
 	// also capture two Train outputs to ensure non-determinism
 	outTrain1 := model.Forward(inputNode)
 	outTrain2 := model.Forward(inputNode)
-	vTrain1 := copySlice(outTrain1.Value.Data)
-	vTrain2 := copySlice(outTrain2.Value.Data)
+	vTrain1 := prodCopySlice(outTrain1.Value.Data)
+	vTrain2 := prodCopySlice(outTrain2.Value.Data)
 	t.Logf("[инфо] во время обучения - прогон 1 (Train) / during training - run 1 (Train): %v", vTrain1)
 	t.Logf("[инфо] во время обучения - прогон 2 (Train) / during training - run 2 (Train): %v", vTrain2)
 
@@ -127,8 +127,8 @@ func TestProductionTrainEvalMode_Product(t *testing.T) {
 	model.Eval()
 	outEvalA := model.Forward(inputNode)
 	outEvalB := model.Forward(inputNode)
-	vEvalA := copySlice(outEvalA.Value.Data)
-	vEvalB := copySlice(outEvalB.Value.Data)
+	vEvalA := prodCopySlice(outEvalA.Value.Data)
+	vEvalB := prodCopySlice(outEvalB.Value.Data)
 	t.Logf("[инфо] после обучения - прогон 1 (Eval) / after training - run 1 (Eval): %v", vEvalA)
 	t.Logf("[инфо] после обучения - прогон 2 (Eval) / after training - run 2 (Eval): %v", vEvalB)
 

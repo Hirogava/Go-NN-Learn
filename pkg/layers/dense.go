@@ -121,12 +121,15 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 	}
 
 	xTensor := op.x.Value
+
 	xRows := 1
 	xCols := xTensor.Shape[0]
+
 	if len(xTensor.Shape) == 2 {
 		xRows = xTensor.Shape[0]
 		xCols = xTensor.Shape[1]
 	}
+
 	xMat := &tensor.Matrix{
 		Data: xTensor.Data,
 		Rows: xRows,
@@ -134,6 +137,7 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 	}
 
 	wTensor := op.w.Value
+
 	wMat := &tensor.Matrix{
 		Data: wTensor.Data,
 		Rows: wTensor.Shape[0],
@@ -144,42 +148,68 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 	if err != nil {
 		panic("Transposition failed: " + err.Error())
 	}
+
 	xGradMat, err := matrix.MatMul(gradMat, wMatT)
 	if err != nil {
 		panic("Matrix multiplication failed: " + err.Error())
 	}
-	op.x.Grad = &tensor.Tensor{
-		Data:    xGradMat.Data,
-		Shape:   []int{xGradMat.Rows, xGradMat.Cols},
-		Strides: []int{xGradMat.Cols, 1},
+
+	if op.x.Grad == nil {
+		op.x.Grad = &tensor.Tensor{
+			Data:    make([]float64, len(xGradMat.Data)),
+			Shape:   []int{xGradMat.Rows, xGradMat.Cols},
+			Strides: []int{xGradMat.Cols, 1},
+		}
+	}
+
+	for i := range xGradMat.Data {
+		op.x.Grad.Data[i] += xGradMat.Data[i]
 	}
 
 	xMatT, err := matrix.Transposition(xMat)
 	if err != nil {
 		panic("Transposition failed: " + err.Error())
 	}
+
 	wGradMat, err := matrix.MatMul(xMatT, gradMat)
 	if err != nil {
 		panic("Matrix multiplication failed: " + err.Error())
 	}
-	op.w.Grad = &tensor.Tensor{
-		Data:    wGradMat.Data,
-		Shape:   []int{wGradMat.Rows, wGradMat.Cols},
-		Strides: []int{wGradMat.Cols, 1},
+
+	if op.w.Grad == nil {
+		op.w.Grad = &tensor.Tensor{
+			Data:    make([]float64, len(wGradMat.Data)),
+			Shape:   []int{wGradMat.Rows, wGradMat.Cols},
+			Strides: []int{wGradMat.Cols, 1},
+		}
+	}
+
+	for i := range wGradMat.Data {
+		op.w.Grad.Data[i] += wGradMat.Data[i]
 	}
 
 	bGrad := make([]float64, gradMat.Cols)
+
 	for j := 0; j < gradMat.Cols; j++ {
 		sum := 0.0
+
 		for i := 0; i < gradMat.Rows; i++ {
 			sum += gradMat.Data[i*gradMat.Cols+j]
 		}
+
 		bGrad[j] = sum
 	}
-	op.b.Grad = &tensor.Tensor{
-		Data:    bGrad,
-		Shape:   []int{len(bGrad)},
-		Strides: []int{1},
+
+	if op.b.Grad == nil {
+		op.b.Grad = &tensor.Tensor{
+			Data:    make([]float64, len(bGrad)),
+			Shape:   []int{len(bGrad)},
+			Strides: []int{1},
+		}
+	}
+
+	for i := range bGrad {
+		op.b.Grad.Data[i] += bGrad[i]
 	}
 }
 

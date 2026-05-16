@@ -1,4 +1,4 @@
-package applied
+package applied_test
 
 import (
 	"math"

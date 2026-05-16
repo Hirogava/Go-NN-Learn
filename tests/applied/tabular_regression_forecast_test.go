@@ -145,7 +145,12 @@ func TestTabularRegressionProduct(t *testing.T) {
 
 			sumLoss += lossVal
 
-			engine.ZeroGrad()
+			// zero param grads before backward to prevent accumulation
+			for _, p := range params {
+				if p != nil {
+					p.ZeroGrad()
+				}
+			}
 			engine.Backward(lossNode)
 
 			// SGD update
@@ -157,7 +162,6 @@ func TestTabularRegressionProduct(t *testing.T) {
 					p.Value.Data[i] -= lr * p.Grad.Data[i]
 				}
 			}
-			engine.ZeroGrad()
 		}
 
 		avgLoss := sumLoss / float64(len(trainX))

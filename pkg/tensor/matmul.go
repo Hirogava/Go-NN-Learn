@@ -39,7 +39,7 @@ func MatMul(a, b *Tensor) (*Tensor, error) {
 	}
 
 	// Для очень больших матриц используем BLAS (если доступен)
-	if BLASAvailable && (m >= BLASThreshold || p >= BLASThreshold || n >= BLASThreshold) {
+	if false && BLASAvailable && (m >= BLASThreshold || p >= BLASThreshold || n >= BLASThreshold) {
 		return MatMulBLAS(a, b)
 	}
 

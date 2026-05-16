@@ -1,7 +1,4 @@
-// tests/applied/image_digits_flattened_product_test.go
-package applied
-
-// FAIL
+package applied_test
 
 import (
 	"math"
@@ -10,103 +7,102 @@ import (
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
+	"github.com/Hirogava/Go-NN-Learn/pkg/optimizers"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
 )
 
-// --------------------
-// Utility / Dataset
-// --------------------
+const (
+	digitsClasses  = 10
+	digitsFeatures = 784
+)
 
-// makeSyntheticDigitsDatasetSmall creates a simpler MNIST-like synthetic dataset.
-// Мы уменьшаем размерность признаков (featuresSmall) чтобы модель надежно обучалась
-// на чистой реализации Dense/ReLU в репозитории без BN/специальных инициализаций.
-func makeSyntheticDigitsDatasetSmall(rng *rand.Rand, nSamples int, nClasses int, features int, noiseStd float64) (data []float64, labels []int) {
-	data = make([]float64, nSamples*features)
-	labels = make([]int, nSamples)
-	block := features / nClasses
-	if block == 0 {
-		block = 1
-	}
-	for i := 0; i < nSamples; i++ {
-		c := rng.Intn(nClasses)
-		labels[i] = c
-		for f := 0; f < features; f++ {
-			base := 0.0
-			if f >= c*block && f < (c+1)*block {
-				// яркость для этого класса
-				base = 1.0
-			}
-			noise := rng.NormFloat64() * noiseStd
-			data[i*features+f] = base + noise
-		}
-	}
-	return
-}
+func digitsMakeDataset(rng *rand.Rand, n int) ([]float64, []int) {
+	data := make([]float64, n*digitsFeatures)
+	labels := make([]int, n)
 
-func makeOneHot(labels []int, nClasses int) *tensor.Tensor {
-	n := len(labels)
-	out := make([]float64, n*nClasses)
 	for i := 0; i < n; i++ {
-		out[i*nClasses+labels[i]] = 1.0
-	}
-	return &tensor.Tensor{
-		Data:    out,
-		Shape:   []int{n, nClasses},
-		Strides: []int{nClasses, 1},
-	}
-}
+		cls := rng.Intn(digitsClasses)
+		labels[i] = cls
 
-func makeInputTensor(batchData []float64, batchSize int, features int) *tensor.Tensor {
-	return &tensor.Tensor{
-		Data:    batchData,
-		Shape:   []int{batchSize, features},
-		Strides: []int{features, 1},
-	}
-}
+		// Фоновый шум
+		for f := 0; f < digitsFeatures; f++ {
+			data[i*digitsFeatures+f] = rng.Float64() * 0.02
+		}
 
-func argmaxRow(logits []float64, cols int) int {
-	bestIdx := 0
-	bestVal := logits[0]
-	for j := 1; j < cols; j++ {
-		if logits[j] > bestVal {
-			bestVal = logits[j]
-			bestIdx = j
+		// Класс-специфический "яркий" участок
+		start := cls * 70
+		for k := 0; k < 60; k++ {
+			idx := start + k
+			if idx >= digitsFeatures {
+				break
+			}
+			data[i*digitsFeatures+idx] = 1.0 + rng.Float64()*0.05
 		}
 	}
-	return bestIdx
+
+	return data, labels
 }
 
-func anyNaNInf(xs []float64) bool {
+func digitsBatchTensor(data []float64, rows, cols int) *tensor.Tensor {
+	return &tensor.Tensor{
+		Data:    data,
+		Shape:   []int{rows, cols},
+		Strides: []int{cols, 1},
+	}
+}
+
+func digitsOneHot(labels []int) *tensor.Tensor {
+	data := make([]float64, len(labels)*digitsClasses)
+	for i, cls := range labels {
+		data[i*digitsClasses+cls] = 1
+	}
+	return digitsBatchTensor(data, len(labels), digitsClasses)
+}
+
+func digitsArgmaxRow(row []float64) int {
+	best := 0
+	bestVal := row[0]
+	for i := 1; i < len(row); i++ {
+		if row[i] > bestVal {
+			bestVal = row[i]
+			best = i
+		}
+	}
+	return best
+}
+
+func digitsAllFinite(xs []float64) bool {
 	for _, v := range xs {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-// softmaxSums computes softmax row sums for logits and returns max deviation from 1.0
-func softmaxMaxAbsDeviationFromOne(logits []float64, rows, cols int) float64 {
+func digitsSoftmaxDeviation(logits []float64, rows, cols int) float64 {
 	maxDev := 0.0
 	for r := 0; r < rows; r++ {
-		row := logits[r*cols : r*cols+cols]
-		// numeric-stable softmax sum
+		row := logits[r*cols : (r+1)*cols]
+
 		maxVal := row[0]
 		for _, v := range row {
 			if v > maxVal {
 				maxVal = v
 			}
 		}
+
 		sum := 0.0
 		for _, v := range row {
 			sum += math.Exp(v - maxVal)
 		}
-		probSum := 0.0
+
+		rowSum := 0.0
 		for _, v := range row {
-			prob := math.Exp(v-maxVal) / sum
-			probSum += prob
+			rowSum += math.Exp(v-maxVal) / sum
 		}
-		dev := math.Abs(probSum - 1.0)
+
+		dev := math.Abs(rowSum - 1)
 		if dev > maxDev {
 			maxDev = dev
 		}
@@ -114,217 +110,165 @@ func softmaxMaxAbsDeviationFromOne(logits []float64, rows, cols int) float64 {
 	return maxDev
 }
 
-// clip limits values in-place to [-limit, limit]
-func clip(xs []float64, limit float64) {
-	for i := range xs {
-		if xs[i] > limit {
-			xs[i] = limit
-		}
-		if xs[i] < -limit {
-			xs[i] = -limit
-		}
+func digitsConfusion(preds, labels []int) [][]int {
+	conf := make([][]int, digitsClasses)
+	for i := range conf {
+		conf[i] = make([]int, digitsClasses)
 	}
+	for i := range preds {
+		conf[labels[i]][preds[i]]++
+	}
+	return conf
 }
 
-// --------------------
-// Product test
-// --------------------
-
 func TestImageDigitsFlattened_Product(t *testing.T) {
-	// Билнгвальные префиксы в логах: "<русский> / <english>"
-	log := func(format string, args ...interface{}) {
-		// format уже должен быть "русский / english"
-		t.Logf(format, args...)
+	seed := int64(20260508)
+
+	trainRng := rand.New(rand.NewSource(seed))
+	testRng := rand.New(rand.NewSource(seed + 1))
+	initRng := rand.New(rand.NewSource(seed + 2))
+
+	trainX, trainY := digitsMakeDataset(trainRng, 2000)
+	testX, testY := digitsMakeDataset(testRng, 500)
+
+	initFn := func(dst []float64) {
+		for i := range dst {
+			dst[i] = initRng.NormFloat64() * 0.01
+		}
 	}
 
-	// reproducible
-	seed := int64(20260315)
-	rng := rand.New(rand.NewSource(seed))
+	d1 := layers.NewDense(digitsFeatures, 128, initFn)
+	d2 := layers.NewDense(128, digitsClasses, initFn)
+	params := append(d1.Params(), d2.Params()...)
 
-	// dataset / model hyperparams chosen for stability on CI
-	trainN := 1500
-	testN := 400
-	nClasses := 10
-	features := 32          // Уменьшили размерность для надежности
-	noiseStd := 0.03        // небольшой шум
-	hidden := 64            // скрытый слой
-	epochs := 50
+	opt := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
+
+	epochs := 25
 	batchSize := 64
-	lr := 0.05 // уменьшили lr для стабильности
 
-	// генерируем наборы
-	trainX, trainY := makeSyntheticDigitsDatasetSmall(rng, trainN, nClasses, features, noiseStd)
-	rngTest := rand.New(rand.NewSource(seed + 1))
-	testX, testY := makeSyntheticDigitsDatasetSmall(rngTest, testN, nClasses, features, noiseStd)
-
-	// model init: детерминированная инициализация (уменьшенный std)
-	initRng1 := rand.New(rand.NewSource(seed + 42))
-	initRng2 := rand.New(rand.NewSource(seed + 43))
-	init1 := func(arr []float64) {
-		for i := range arr {
-			arr[i] = initRng1.NormFloat64() * 0.02
-		}
-	}
-	init2 := func(arr []float64) {
-		for i := range arr {
-			arr[i] = initRng2.NormFloat64() * 0.02
-		}
-	}
-
-	d1 := layers.NewDense(features, hidden, init1)
-	d2 := layers.NewDense(hidden, nClasses, init2)
-
-	// Тренировочный цикл (ручной, без Trainer, чтобы не полагаться на лишние абстракции)
-	for ep := 0; ep < epochs; ep++ {
-		// shuffle indices
-		indices := make([]int, trainN)
-		for i := 0; i < trainN; i++ {
-			indices[i] = i
-		}
-		rng.Shuffle(len(indices), func(i, j int) { indices[i], indices[j] = indices[j], indices[i] })
-
+	for epoch := 0; epoch < epochs; epoch++ {
+		perm := trainRng.Perm(len(trainY))
 		epochLossSum := 0.0
-		epochBatches := 0
+		batches := 0
 
-		for start := 0; start < trainN; start += batchSize {
+		for start := 0; start < len(perm); start += batchSize {
 			end := start + batchSize
-			if end > trainN {
-				end = trainN
+			if end > len(perm) {
+				end = len(perm)
 			}
-			curBatch := end - start
+			bs := end - start
 
-			// build batch and normalize input: (x - 0.5) * 2.0 -> zero-centered
-			batchData := make([]float64, curBatch*features)
-			batchLabels := make([]int, curBatch)
-			for i := 0; i < curBatch; i++ {
-				src := indices[start+i]
-				for f := 0; f < features; f++ {
-					v := trainX[src*features+f]
-					batchData[i*features+f] = (v - 0.5) * 2.0
-				}
-				batchLabels[i] = trainY[src]
-			}
+			batchX := make([]float64, bs*digitsFeatures)
+			batchY := make([]int, bs)
 
-			// forward/backward
-			e := autograd.NewEngine()
-			xTensor := makeInputTensor(batchData, curBatch, features)
-			xNode := e.RequireGrad(xTensor)
-
-			h := d1.Forward(xNode)
-			hAct := e.ReLU(h)
-			logits := d2.Forward(hAct)
-
-			// Clip logits to avoid exp overflow in unstable softmax
-			if logits != nil && logits.Value != nil {
-				clip(logits.Value.Data, 20.0)
+			for i := 0; i < bs; i++ {
+				src := perm[start+i]
+				batchY[i] = trainY[src]
+				copy(
+					batchX[i*digitsFeatures:(i+1)*digitsFeatures],
+					trainX[src*digitsFeatures:(src+1)*digitsFeatures],
+				)
 			}
 
-			target := makeOneHot(batchLabels, nClasses)
-			loss := e.SoftmaxCrossEntropy(logits, target)
+			engine := autograd.NewEngine()
+			input := engine.RequireGrad(digitsBatchTensor(batchX, bs, digitsFeatures))
 
-			if loss.Value != nil && len(loss.Value.Data) > 0 {
-				epochLossSum += loss.Value.Data[0]
+			h := engine.ReLU(d1.Forward(input))
+			logits := d2.Forward(h)
+
+			if logits == nil || logits.Value == nil || !digitsAllFinite(logits.Value.Data) {
+				t.Fatalf("найдены NaN/Inf в логитах / NaN/Inf found in logits")
 			}
-			epochBatches++
 
-			e.Backward(loss)
-
-			// SGD update
-			params := append(d1.Params(), d2.Params()...)
-			for _, p := range params {
-				if p.Grad == nil {
-					continue
-				}
-				for i := range p.Value.Data {
-					p.Value.Data[i] -= lr * p.Grad.Data[i]
-				}
-				p.Grad = nil
+			loss := engine.SoftmaxCrossEntropy(logits, digitsOneHot(batchY))
+			if loss == nil || loss.Value == nil || len(loss.Value.Data) == 0 || !digitsAllFinite(loss.Value.Data) {
+				t.Fatalf("найдены NaN/Inf в loss / NaN/Inf found in loss")
 			}
+
+			epochLossSum += loss.Value.Data[0]
+			batches++
+
+			engine.Backward(loss)
+			opt.Step(params)
+			opt.ZeroGrad(params)
 		}
 
-		avgLoss := epochLossSum / math.Max(1.0, float64(epochBatches))
-		// bilingual log: русский / english
-		log("Эпоха %d — средний loss: %.6f / Epoch %d — avg loss: %.6f", ep+1, avgLoss, ep+1, avgLoss)
-
-		// лёгкая проверка: если loss упал сильно — можно досрочно остановить
-		if avgLoss < 0.005 {
-			log("Ранняя остановка на эпохе %d (loss %.6f) / Early stop at epoch %d (loss %.6f)", ep+1, avgLoss, ep+1, avgLoss)
-			break
-		}
+		avgLoss := epochLossSum / float64(batches)
+		t.Logf("эпоха %d / epoch %d завершена, avg loss = %.6f", epoch+1, epoch+1, avgLoss)
 	}
 
-	// Оценка на тесте
 	correct := 0
 	total := 0
 	maxSoftmaxDev := 0.0
+	preds := make([]int, 0, len(testY))
+	labels := make([]int, 0, len(testY))
 
-	for start := 0; start < testN; start += batchSize {
+	for start := 0; start < len(testY); start += batchSize {
 		end := start + batchSize
-		if end > testN {
-			end = testN
+		if end > len(testY) {
+			end = len(testY)
 		}
-		curBatch := end - start
-		batchData := make([]float64, curBatch*features)
-		batchLabels := make([]int, curBatch)
-		for i := 0; i < curBatch; i++ {
+		bs := end - start
+
+		batchX := make([]float64, bs*digitsFeatures)
+		batchY := make([]int, bs)
+
+		for i := 0; i < bs; i++ {
 			src := start + i
-			for f := 0; f < features; f++ {
-				v := testX[src*features+f]
-				batchData[i*features+f] = (v - 0.5) * 2.0
-			}
-			batchLabels[i] = testY[src]
+			batchY[i] = testY[src]
+			copy(
+				batchX[i*digitsFeatures:(i+1)*digitsFeatures],
+				testX[src*digitsFeatures:(src+1)*digitsFeatures],
+			)
 		}
 
-		e := autograd.NewEngine()
-		xTensor := makeInputTensor(batchData, curBatch, features)
-		xNode := e.RequireGrad(xTensor)
+		engine := autograd.NewEngine()
+		input := engine.RequireGrad(digitsBatchTensor(batchX, bs, digitsFeatures))
 
-		h := d1.Forward(xNode)
-		hAct := e.ReLU(h)
-		logits := d2.Forward(hAct)
+		h := engine.ReLU(d1.Forward(input))
+		logits := d2.Forward(h)
 
-		// sanity checks
-		if logits.Value == nil || len(logits.Value.Data) == 0 {
-			t.Fatalf("Логиты пусты / logits empty")
+		if logits == nil || logits.Value == nil {
+			t.Fatalf("пустые логиты / empty logits")
 		}
-		if anyNaNInf(logits.Value.Data) {
-			t.Fatalf("Найден NaN/Inf в логитах / NaN/Inf found in logits")
+		if !digitsAllFinite(logits.Value.Data) {
+			t.Fatalf("найдены NaN/Inf в логитах на тесте / NaN/Inf found in test logits")
 		}
-		dev := softmaxMaxAbsDeviationFromOne(logits.Value.Data, curBatch, nClasses)
+
+		dev := digitsSoftmaxDeviation(logits.Value.Data, bs, digitsClasses)
 		if dev > maxSoftmaxDev {
 			maxSoftmaxDev = dev
 		}
 
-		for i := 0; i < curBatch; i++ {
-			row := logits.Value.Data[i*nClasses : i*nClasses+nClasses]
-			pred := argmaxRow(row, nClasses)
-			if pred == batchLabels[i] {
+		for i := 0; i < bs; i++ {
+			row := logits.Value.Data[i*digitsClasses : (i+1)*digitsClasses]
+			pred := digitsArgmaxRow(row)
+			preds = append(preds, pred)
+			labels = append(labels, batchY[i])
+			if pred == batchY[i] {
 				correct++
 			}
 			total++
 		}
 	}
 
+	conf := digitsConfusion(preds, labels)
+	for cls := 0; cls < digitsClasses; cls++ {
+		rowTotal := 0
+		for _, v := range conf[cls] {
+			rowTotal += v
+		}
+		t.Logf("class %d: correct=%d total=%d row=%v", cls, conf[cls][cls], rowTotal, conf[cls])
+	}
+
 	accuracy := float64(correct) / float64(total)
-	log("Точность на тесте: %.4f / Test accuracy: %.4f", accuracy, accuracy)
-	log("Максимальная отклонение суммы softmax от 1.0: %.6e / Max softmax sum dev from 1.0: %.6e", maxSoftmaxDev, maxSoftmaxDev)
+	t.Logf("test accuracy = %.4f / test accuracy = %.4f", accuracy, accuracy)
+	t.Logf("max softmax deviation = %.6e / max softmax deviation = %.6e", maxSoftmaxDev, maxSoftmaxDev)
 
-	// Критерии успеха
-	minAccuracy := 0.88
-	maxSoftmaxEps := 1e-4
-
-	if maxSoftmaxDev > maxSoftmaxEps {
-		t.Fatalf("Слишком большое отклонение суммы softmax от 1 (%.6e) / Softmax sums dev too large (%.6e)", maxSoftmaxDev, maxSoftmaxDev)
+	if accuracy < 0.88 {
+		t.Fatalf("accuracy below threshold: %.4f < 0.88 / accuracy below threshold: %.4f < 0.88", accuracy, accuracy)
 	}
-	if accuracy < minAccuracy {
-		t.Fatalf("Точность ниже порога: %.4f < %.4f / Accuracy below threshold: %.4f < %.4f", accuracy, minAccuracy, accuracy, minAccuracy)
+	if maxSoftmaxDev > 1e-6 {
+		t.Fatalf("softmax sum deviation too large: %.6e / softmax sum deviation too large: %.6e", maxSoftmaxDev, maxSoftmaxDev)
 	}
-}
-
-// helper to convert bool to float64 (used only for anyNaNInf signature convenience)
-func float64FromBool(b bool) float64 {
-	if b {
-		return math.NaN()
-	}
-	return 0.0
 }

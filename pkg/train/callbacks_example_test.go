@@ -29,6 +29,8 @@ func (m *SimpleModel) Params() []*graph.Node {
 	return m.layer.Params()
 }
 
+func (m *SimpleModel) Train()                             {}
+func (m *SimpleModel) Eval()                              {}
 func (m *SimpleModel) Layers() []layers.Layer {
 	return []layers.Layer{m.layer}
 }

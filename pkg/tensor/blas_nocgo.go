@@ -1,5 +1,5 @@
-//go:build !cgo
-// +build !cgo
+//go:build windows
+// +build windows
 
 package tensor
 

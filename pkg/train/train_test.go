@@ -34,7 +34,7 @@ type fakeModel struct {
 
 func (m *fakeModel) Forward(n *graph.Node) *graph.Node {
 	// всегда возвращаем предсказание 2.0 (чтобы совпадало с таргетом в тесте)
-	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1}}, nil, nil)
+	m.lastPred = graph.NewNode(&tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}, Strides: []int{1, 1}}, nil, nil)
 	return m.lastPred
 }
 

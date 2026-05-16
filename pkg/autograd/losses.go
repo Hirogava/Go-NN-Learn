@@ -3,8 +3,8 @@ package autograd
 import (
 	"math"
 
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 type LossOp interface {
@@ -104,73 +104,66 @@ func NewCrossEntropyLogitsOp(logits *graph.Node, target *tensor.Tensor) *CrossEn
 
 // Forward вычисляет cross-entropy loss численно стабильным способом
 func (op *CrossEntropyLogitsOp) Forward() *tensor.Tensor {
-	// Проверка: должны быть 2D тензоры [batch_size, num_classes]
 	if len(op.logits.Value.Shape) != 2 || len(op.target.Shape) != 2 {
 		panic("CrossEntropyLogits: logits and target must be 2D tensors")
 	}
-	if op.logits.Value.Shape[0] != op.target.Shape[0] {
-		panic("CrossEntropyLogits: batch sizes must match")
-	}
-	if op.logits.Value.Shape[1] != op.target.Shape[1] {
-		panic("CrossEntropyLogits: number of classes must match")
+	if op.logits.Value.Shape[0] != op.target.Shape[0] || op.logits.Value.Shape[1] != op.target.Shape[1] {
+		panic("CrossEntropyLogits: logits and target shape mismatch")
 	}
 
 	batchSize := op.logits.Value.Shape[0]
 	numClasses := op.logits.Value.Shape[1]
 
-	// Шаг 1: Численно стабильный softmax с log-sum-exp трюком
-	// Находим максимум для каждого примера в батче
 	softmax := tensor.Zeros(batchSize, numClasses)
 
-	for i := range batchSize {
-		// Находим максимум по строке
-		maxVal := op.logits.Value.Data[i*op.logits.Value.Strides[0]]
+	for i := 0; i < batchSize; i++ {
+		rowOffset := i * numClasses
+
+		maxVal := op.logits.Value.Data[rowOffset]
+
 		for j := 1; j < numClasses; j++ {
-			idx := i*op.logits.Value.Strides[0] + j*op.logits.Value.Strides[1]
-			if op.logits.Value.Data[idx] > maxVal {
-				maxVal = op.logits.Value.Data[idx]
+			v := op.logits.Value.Data[rowOffset+j]
+			if v > maxVal {
+				maxVal = v
 			}
 		}
 
-		// Вычисляем exp(x - max) и сумму
 		sumExp := 0.0
-		for j := range numClasses {
-			idx := i*op.logits.Value.Strides[0] + j*op.logits.Value.Strides[1]
-			shifted := op.logits.Value.Data[idx] - maxVal
-			expVal := math.Exp(shifted)
-			softmax.Data[idx] = expVal
+
+		for j := 0; j < numClasses; j++ {
+			expVal := math.Exp(op.logits.Value.Data[rowOffset+j] - maxVal)
+			softmax.Data[rowOffset+j] = expVal
 			sumExp += expVal
 		}
 
-		// Нормализуем для получения softmax
-		for j := range numClasses {
-			idx := i*op.logits.Value.Strides[0] + j*op.logits.Value.Strides[1]
-			softmax.Data[idx] /= sumExp
+		for j := 0; j < numClasses; j++ {
+			softmax.Data[rowOffset+j] /= sumExp
 		}
 	}
+
 	op.softmax = softmax
 
-	// Шаг 2: Вычисляем cross-entropy: -sum(target * log(softmax))
 	totalLoss := 0.0
-	const epsilon = 1e-15 // Для численной стабильности log
+	const epsilon = 1e-15
 
-	for i := range batchSize {
-		for j := range numClasses {
-			idx := i*op.logits.Value.Strides[0] + j*op.logits.Value.Strides[1]
-			targetIdx := i*op.target.Strides[0] + j*op.target.Strides[1]
+	for i := 0; i < batchSize; i++ {
+		rowOffset := i * numClasses
 
-			if op.target.Data[targetIdx] > 0 {
-				// Добавляем epsilon для избежания log(0)
-				prob := math.Max(softmax.Data[idx], epsilon)
-				totalLoss -= op.target.Data[targetIdx] * math.Log(prob)
+		for j := 0; j < numClasses; j++ {
+			targetVal := op.target.Data[rowOffset+j]
+
+			if targetVal > 0 {
+				prob := math.Max(softmax.Data[rowOffset+j], epsilon)
+				totalLoss -= targetVal * math.Log(prob)
 			}
 		}
 	}
 
-	// Возвращаем средний loss по батчу
 	avgLoss := totalLoss / float64(batchSize)
+
 	result := tensor.Zeros(1)
 	result.Data[0] = avgLoss
+
 	return result
 }
 
@@ -183,15 +176,14 @@ func (op *CrossEntropyLogitsOp) Backward(grad *tensor.Tensor) {
 		op.logits.Grad = tensor.Zeros(op.logits.Value.Shape...)
 	}
 
-	// Градиент: dL/dlogits = (softmax - target) / batch_size * grad
-	gradScale := grad.Data[0] / float64(batchSize)
+	scale := grad.Data[0] / float64(batchSize)
 
-	for i := range batchSize {
-		for j := range numClasses {
-			idx := i*op.logits.Value.Strides[0] + j*op.logits.Value.Strides[1]
-			targetIdx := i*op.target.Strides[0] + j*op.target.Strides[1]
+	for i := 0; i < batchSize; i++ {
+		rowOffset := i * numClasses
 
-			op.logits.Grad.Data[idx] += (op.softmax.Data[idx] - op.target.Data[targetIdx]) * gradScale
+		for j := 0; j < numClasses; j++ {
+			op.logits.Grad.Data[rowOffset+j] +=
+				(op.softmax.Data[rowOffset+j] - op.target.Data[rowOffset+j]) * scale
 		}
 	}
 }

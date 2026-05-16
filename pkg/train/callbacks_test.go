@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/layers"
-	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
+	"github.com/Hirogava/Go-NN-Learn/pkg/tensor/graph"
 )
 
 // Мок-модель для тестирования
@@ -18,6 +18,8 @@ type MockModel struct {
 func (m *MockModel) Forward(x *graph.Node) *graph.Node { return x }
 func (m *MockModel) Params() []*graph.Node              { return m.params }
 func (m *MockModel) Layers() []layers.Layer             { return nil }
+func (m *MockModel) Train()                             {}
+func (m *MockModel) Eval()                              {}
 
 // newMockParam создает параметр для тестирования
 func newMockParam(vals []float64, shape []int) *graph.Node {
