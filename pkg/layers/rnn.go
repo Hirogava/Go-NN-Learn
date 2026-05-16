@@ -26,6 +26,7 @@ type RNN struct {
 	hiddenSize    int
 	numLayers     int
 	bidirectional bool
+	training      bool
 
 	// Обучаемые параметры для каждого слоя
 	// Для каждого слоя нужны веса:
@@ -117,6 +118,7 @@ func NewRNN(
 		hiddenSize:    hiddenSize,
 		numLayers:     numLayers,
 		bidirectional: bidirectional,
+		training:      true,
 		weights:       weights,
 		biases:        biases,
 	}
@@ -178,11 +180,22 @@ func (r *RNN) Forward(x *graph.Node) *graph.Node {
 	batchSize := x.Value.Shape[0]
 	seqLen := x.Value.Shape[1]
 
-	hStates := make([]*tensor.Tensor, seqLen+1)
-	if r.hiddenState == nil {
-		hStates[0] = tensor.Zeros(batchSize, r.hiddenSize)
+	var hStates []*tensor.Tensor
+	var hPrev *tensor.Tensor
+	if r.training {
+		hStates = make([]*tensor.Tensor, seqLen+1)
+		if r.hiddenState == nil {
+			hStates[0] = tensor.Zeros(batchSize, r.hiddenSize)
+		} else {
+			hStates[0] = r.hiddenState
+		}
+		hPrev = hStates[0]
 	} else {
-		hStates[0] = r.hiddenState
+		if r.hiddenState == nil {
+			hPrev = tensor.Zeros(batchSize, r.hiddenSize)
+		} else {
+			hPrev = r.hiddenState
+		}
 	}
 
 	// Оптимизация: транспонируем веса один раз до цикла
@@ -203,8 +216,8 @@ func (r *RNN) Forward(x *graph.Node) *graph.Node {
 		ih := matrix.MatrixToTensor(ihM)
 
 		// hh = h_{t-1} * Whh^T
-		htM := matrix.TensorToMatrix(hStates[t])
-		hhM, _ := matrix.MatMul(htM, whhT)
+		hPrevM := matrix.TensorToMatrix(hPrev)
+		hhM, _ := matrix.MatMul(hPrevM, whhT)
 		hh := matrix.MatrixToTensor(hhM)
 
 		// Сложение всех компонентов
@@ -215,11 +228,19 @@ func (r *RNN) Forward(x *graph.Node) *graph.Node {
 		// Активация
 		h_t := tensor.Apply(sum, math.Tanh)
 
-		hStates[t+1] = h_t
+		if r.training {
+			hStates[t+1] = h_t
+		}
+		hPrev = h_t
 		copySlice(outputVal, h_t, t)
 	}
 
-	r.hiddenState = hStates[seqLen]
+	r.hiddenState = hPrev
+	if !r.training {
+		// В inference режиме не строим граф и не держим состояние для BPTT.
+		return graph.NewNode(outputVal, nil, nil)
+	}
+
 	op := &rnnOp{x: x, rnn: r, hStates: hStates}
 
 	parents := append([]*graph.Node{x}, r.weights...)
@@ -227,6 +248,12 @@ func (r *RNN) Forward(x *graph.Node) *graph.Node {
 
 	return graph.NewNode(outputVal, parents, op)
 }
+
+// Train переводит RNN в режим обучения (строит граф и хранит состояния для BPTT).
+func (r *RNN) Train() { r.training = true }
+
+// Eval переводит RNN в режим inference (без графа и BPTT-буферов).
+func (r *RNN) Eval() { r.training = false }
 
 // Backward реализует ручной BPTT
 func (op *rnnOp) Backward(gradOutput *tensor.Tensor) {

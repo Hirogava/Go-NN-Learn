@@ -23,6 +23,11 @@ func (s *Sequential) Layers() []layers.Layer {
 	return s.layers
 }
 
+// AddLayer добавляет новый слой в конец последовательности.
+func (s *Sequential) AddLayer(layer layers.Layer) {
+	s.layers = append(s.layers, layer)
+}
+
 // Forward прогоняет вход по слоям последовательно и возвращает результат.
 func (s *Sequential) Forward(x *graph.Node) *graph.Node {
 	out := x

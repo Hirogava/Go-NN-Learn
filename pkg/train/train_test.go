@@ -21,9 +21,15 @@ func (f *fakeLayer) Params() []*graph.Node { return f.params }
 
 func (f *fakeLayer) Forward(x *graph.Node) *graph.Node { return x }
 
+func (f *fakeLayer) Train() {}
+func (f *fakeLayer) Eval()  {}
+
 // простой фейковый модель, хранит последний предикт как узел
 type fakeModel struct {
 	lastPred *graph.Node
+
+	trainCalls int
+	evalCalls  int
 }
 
 func (m *fakeModel) Forward(n *graph.Node) *graph.Node {
@@ -45,6 +51,9 @@ func (m *fakeModel) Params() []*graph.Node {
 	}
 	return []*graph.Node{m.lastPred}
 }
+
+func (m *fakeModel) Train() { m.trainCalls++ }
+func (m *fakeModel) Eval()  { m.evalCalls++ }
 
 // фейковый оптимизатор для проверки вызова Step
 type fakeOpt struct {
@@ -190,5 +199,103 @@ func TestTrainerFromConfig_Deterministic(t *testing.T) {
 	loss2 := tr2.context.Metrics["loss"]
 	if loss1 != loss2 {
 		t.Fatalf("deterministic test failed: loss1=%v loss2=%v (expected equal for same seed)", loss1, loss2)
+	}
+}
+
+// TestTrainerTrain_CallsModelTrainMode проверяет, что Trainer переводит модель в train
+// перед стартом и в начале каждой эпохи (поддержка Dropout / BatchNorm / RNN.training).
+func TestTrainerTrain_CallsModelTrainMode(t *testing.T) {
+	cfg := &TrainerConfig{
+		Epochs:    3,
+		BatchSize: 1,
+		Device:    "cpu",
+		Seed:      1,
+	}
+	features := &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1, 1}}
+	targets := &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}}
+	ds := dataloader.NewSimpleDataset(features, targets)
+	dl := dataloader.NewDataLoader(ds, dataloader.DataLoaderConfig{
+		BatchSize: 1,
+		Shuffle:   false,
+		Seed:      cfg.Seed,
+	})
+
+	model := &fakeModel{}
+	tr := NewTrainerFromConfig(
+		cfg,
+		model,
+		dl,
+		&fakeOpt{},
+		&autograd.MSELossOp{},
+		optimizers.NewStepLR(0.01, 0.5, 1),
+		metrics.NewMAE(),
+		NewCallbackList(),
+	)
+
+	tr.Train()
+
+	// 1 вызов перед OnTrainBegin + по одному в начале каждой из 3 эпох.
+	wantTrain := 1 + cfg.Epochs
+	if model.trainCalls != wantTrain {
+		t.Fatalf("expected model.Train() %d times, got %d", wantTrain, model.trainCalls)
+	}
+	if model.evalCalls != 0 {
+		t.Fatalf("expected no Eval() during plain Train(), got %d", model.evalCalls)
+	}
+}
+
+// evalThenTrainCallback имитирует валидацию: Eval() на конец эпохи, затем снова Train()
+// перед следующей эпохой (второй вызов обеспечивает Trainer в начале эпохи).
+type evalThenTrainCallback struct {
+	BaseCallback
+}
+
+func (c *evalThenTrainCallback) OnEpochEnd(ctx *TrainingContext) error {
+	ctx.Model.Eval()
+	ctx.Model.Train()
+	return nil
+}
+
+// TestTrainerTrainEval_ValidationPattern демонстрирует поддержку train/eval: в OnEpochEnd
+// можно перейти в eval (инференс), затем вернуть train; Trainer снова вызывает Train()
+// в начале следующей эпохи.
+func TestTrainerTrainEval_ValidationPattern(t *testing.T) {
+	const epochs = 2
+	cfg := &TrainerConfig{
+		Epochs:    epochs,
+		BatchSize: 1,
+		Device:    "cpu",
+		Seed:      7,
+	}
+	features := &tensor.Tensor{Data: []float64{1.0}, Shape: []int{1, 1}}
+	targets := &tensor.Tensor{Data: []float64{2.0}, Shape: []int{1, 1}}
+	ds := dataloader.NewSimpleDataset(features, targets)
+	dl := dataloader.NewDataLoader(ds, dataloader.DataLoaderConfig{
+		BatchSize: 1,
+		Shuffle:   false,
+		Seed:      cfg.Seed,
+	})
+
+	model := &fakeModel{}
+	tr := NewTrainerFromConfig(
+		cfg,
+		model,
+		dl,
+		&fakeOpt{},
+		&autograd.MSELossOp{},
+		optimizers.NewStepLR(0.01, 0.5, 1),
+		metrics.NewMAE(),
+		NewCallbackList(&evalThenTrainCallback{}),
+	)
+
+	tr.Train()
+
+	if model.evalCalls != epochs {
+		t.Fatalf("expected Eval() once per epoch from callback, got %d", model.evalCalls)
+	}
+	// Старт: 1 Train; каждая эпоха: Train в начале эпохи; колбэк: +Train после Eval; итого 1 + 2*(1+1) = 5.
+	wantTrain := 1 + epochs*2
+	if model.trainCalls != wantTrain {
+		t.Fatalf("expected model.Train() %d times, got %d", wantTrain, model.trainCalls)
 	}
 }

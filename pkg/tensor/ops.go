@@ -10,21 +10,139 @@ const (
 	UnrollFactor = 8 // Развертывание циклов для SIMD
 )
 
+// broadcastShapes вычисляет результирующую shape по правилам NumPy broadcasting.
+// Возвращает результирующую shape и ошибку, если формы несовместимы.
+func broadcastShapes(a, b []int) ([]int, error) {
+	n, m := len(a), len(b)
+	maxLen := n
+	if m > n {
+		maxLen = m
+	}
+	result := make([]int, maxLen)
+	for i := 0; i < maxLen; i++ {
+		var ad, bd int
+		if i < maxLen-n {
+			ad = 1
+		} else {
+			ad = a[i-(maxLen-n)]
+		}
+		if i < maxLen-m {
+			bd = 1
+		} else {
+			bd = b[i-(maxLen-m)]
+		}
+		if ad != bd && ad != 1 && bd != 1 {
+			return nil, fmt.Errorf("shapes not broadcastable: %v vs %v", a, b)
+		}
+		if ad > bd {
+			result[i] = ad
+		} else {
+			result[i] = bd
+		}
+	}
+	return result, nil
+}
+
+// broadcastTo возвращает новый тензор с данными, расширенными до нужной формы (без копирования данных, только view).
+// Если shape совпадает — возвращает исходный тензор.
+func broadcastTo(t *Tensor, shape []int) (*Tensor, error) {
+	if shapesEqual(t.Shape, shape) {
+		return t, nil
+	}
+	n, m := len(shape), len(t.Shape)
+	if m > n {
+		return nil, fmt.Errorf("cannot broadcast shape %v to %v", t.Shape, shape)
+	}
+	// Проверка совместимости
+	for i := 0; i < n; i++ {
+		var tsz int
+		if i < n-m {
+			tsz = 1
+		} else {
+			tsz = t.Shape[i-(n-m)]
+		}
+		if tsz != shape[i] && tsz != 1 {
+			return nil, fmt.Errorf("cannot broadcast shape %v to %v", t.Shape, shape)
+		}
+	}
+	// Новые strides: если размер == 1, stride = 0 (повторение значения)
+	newStrides := make([]int, n)
+	for i := 0; i < n; i++ {
+		if i < n-m {
+			newStrides[i] = 0
+		} else if t.Shape[i-(n-m)] == 1 {
+			newStrides[i] = 0
+		} else {
+			newStrides[i] = t.Strides[i-(n-m)]
+		}
+	}
+	return &Tensor{
+		Data:    t.Data,
+		Shape:   append([]int{}, shape...),
+		Strides: newStrides,
+	}, nil
+}
+
+// indexOffset вычисляет смещение в Data для broadcasted тензора по shape/strides.
+func indexOffset(idx []int, strides []int) int {
+	off := 0
+	for i, v := range idx {
+		off += v * strides[i]
+	}
+	return off
+}
+
+// nextIndex инкрементирует индекс idx по shape (N-мерный счетчик).
+func nextIndex(idx, shape []int) bool {
+	for i := len(idx) - 1; i >= 0; i-- {
+		idx[i]++
+		if idx[i] < shape[i] {
+			return true
+		}
+		idx[i] = 0
+	}
+	return false
+}
+
 // Add выполняет поэлементное сложение двух тензоров с векторизацией.
 // Возвращает новый тензор c, где c[i] = a[i] + b[i]
 // Тензоры должны иметь одинаковую форму (shape).
 func Add(a, b *Tensor) (*Tensor, error) {
-	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	outShape, err := broadcastShapes(a.Shape, b.Shape)
+	if err != nil {
+		return nil, err
 	}
-
+	aB, err := broadcastTo(a, outShape)
+	if err != nil {
+		return nil, err
+	}
+	bB, err := broadcastTo(b, outShape)
+	if err != nil {
+		return nil, err
+	}
+	size := 1
+	for _, d := range outShape {
+		size *= d
+	}
 	result := &Tensor{
-		Data:    make([]float64, len(a.Data)),
-		Shape:   append([]int{}, a.Shape...),
-		Strides: append([]int{}, a.Strides...),
+		Data:    make([]float64, size),
+		Shape:   append([]int{}, outShape...),
+		Strides: make([]int, len(outShape)),
 	}
-
-	addVectorized(a.Data, b.Data, result.Data)
+	// Вычисляем strides для результата
+	stride := 1
+	for i := len(outShape) - 1; i >= 0; i-- {
+		result.Strides[i] = stride
+		stride *= outShape[i]
+	}
+	// Индексируем по outShape
+	idx := make([]int, len(outShape))
+	for i := 0; i < size; i++ {
+		ai := indexOffset(idx, aB.Strides)
+		bi := indexOffset(idx, bB.Strides)
+		result.Data[i] = aB.Data[ai] + bB.Data[bi]
+		nextIndex(idx, outShape)
+	}
 	return result, nil
 }
 
@@ -32,49 +150,115 @@ func Add(a, b *Tensor) (*Tensor, error) {
 // Возвращает новый тензор c, где c[i] = a[i] * b[i]
 // Тензоры должны иметь одинаковую форму (shape).
 func Mul(a, b *Tensor) (*Tensor, error) {
-	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	outShape, err := broadcastShapes(a.Shape, b.Shape)
+	if err != nil {
+		return nil, err
 	}
-
+	aB, err := broadcastTo(a, outShape)
+	if err != nil {
+		return nil, err
+	}
+	bB, err := broadcastTo(b, outShape)
+	if err != nil {
+		return nil, err
+	}
+	size := 1
+	for _, d := range outShape {
+		size *= d
+	}
 	result := &Tensor{
-		Data:    make([]float64, len(a.Data)),
-		Shape:   append([]int{}, a.Shape...),
-		Strides: append([]int{}, a.Strides...),
+		Data:    make([]float64, size),
+		Shape:   append([]int{}, outShape...),
+		Strides: make([]int, len(outShape)),
 	}
-
-	mulVectorized(a.Data, b.Data, result.Data)
+	stride := 1
+	for i := len(outShape) - 1; i >= 0; i-- {
+		result.Strides[i] = stride
+		stride *= outShape[i]
+	}
+	idx := make([]int, len(outShape))
+	for i := 0; i < size; i++ {
+		ai := indexOffset(idx, aB.Strides)
+		bi := indexOffset(idx, bB.Strides)
+		result.Data[i] = aB.Data[ai] * bB.Data[bi]
+		nextIndex(idx, outShape)
+	}
 	return result, nil
 }
 
 // Sub выполняет поэлементное вычитание: a - b
 func Sub(a, b *Tensor) (*Tensor, error) {
-	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	outShape, err := broadcastShapes(a.Shape, b.Shape)
+	if err != nil {
+		return nil, err
 	}
-
+	aB, err := broadcastTo(a, outShape)
+	if err != nil {
+		return nil, err
+	}
+	bB, err := broadcastTo(b, outShape)
+	if err != nil {
+		return nil, err
+	}
+	size := 1
+	for _, d := range outShape {
+		size *= d
+	}
 	result := &Tensor{
-		Data:    make([]float64, len(a.Data)),
-		Shape:   append([]int{}, a.Shape...),
-		Strides: append([]int{}, a.Strides...),
+		Data:    make([]float64, size),
+		Shape:   append([]int{}, outShape...),
+		Strides: make([]int, len(outShape)),
 	}
-
-	subVectorized(a.Data, b.Data, result.Data)
+	stride := 1
+	for i := len(outShape) - 1; i >= 0; i-- {
+		result.Strides[i] = stride
+		stride *= outShape[i]
+	}
+	idx := make([]int, len(outShape))
+	for i := 0; i < size; i++ {
+		ai := indexOffset(idx, aB.Strides)
+		bi := indexOffset(idx, bB.Strides)
+		result.Data[i] = aB.Data[ai] - bB.Data[bi]
+		nextIndex(idx, outShape)
+	}
 	return result, nil
 }
 
 // Div выполняет поэлементное деление: a / b
 func Div(a, b *Tensor) (*Tensor, error) {
-	if !shapesEqual(a.Shape, b.Shape) {
-		return nil, fmt.Errorf("формы тензоров должны совпадать: %v != %v", a.Shape, b.Shape)
+	outShape, err := broadcastShapes(a.Shape, b.Shape)
+	if err != nil {
+		return nil, err
 	}
-
+	aB, err := broadcastTo(a, outShape)
+	if err != nil {
+		return nil, err
+	}
+	bB, err := broadcastTo(b, outShape)
+	if err != nil {
+		return nil, err
+	}
+	size := 1
+	for _, d := range outShape {
+		size *= d
+	}
 	result := &Tensor{
-		Data:    make([]float64, len(a.Data)),
-		Shape:   append([]int{}, a.Shape...),
-		Strides: append([]int{}, a.Strides...),
+		Data:    make([]float64, size),
+		Shape:   append([]int{}, outShape...),
+		Strides: make([]int, len(outShape)),
 	}
-
-	divVectorized(a.Data, b.Data, result.Data)
+	stride := 1
+	for i := len(outShape) - 1; i >= 0; i-- {
+		result.Strides[i] = stride
+		stride *= outShape[i]
+	}
+	idx := make([]int, len(outShape))
+	for i := 0; i < size; i++ {
+		ai := indexOffset(idx, aB.Strides)
+		bi := indexOffset(idx, bB.Strides)
+		result.Data[i] = aB.Data[ai] / bB.Data[bi]
+		nextIndex(idx, outShape)
+	}
 	return result, nil
 }
 
@@ -294,4 +478,92 @@ func Exp(a *Tensor) *Tensor {
 // Возвращает новый тензор с результатами применения log.
 func Log(a *Tensor) *Tensor {
 	return Apply(a, math.Log)
+}
+
+// Concatenate объединяет слайс тензоров по указанной оси.
+func Concatenate(tensors []*Tensor, axis int) (*Tensor, error) {
+	if len(tensors) == 0 {
+		return nil, fmt.Errorf("empty tensors list")
+	}
+
+	// 1. Проверка размерностей и расчет новой формы
+	firstShape := tensors[0].Shape
+	if axis < 0 || axis >= len(firstShape) {
+		return nil, fmt.Errorf("invalid axis %d for shape %v", axis, firstShape)
+	}
+
+	newShape := append([]int{}, firstShape...)
+	concatDimSize := 0
+	for _, t := range tensors {
+		if len(t.Shape) != len(firstShape) {
+			return nil, fmt.Errorf("tensors must have same number of dimensions")
+		}
+		for i := range t.Shape {
+			if i != axis && t.Shape[i] != firstShape[i] {
+				return nil, fmt.Errorf("mismatch at axis %d: %d != %d", i, t.Shape[i], firstShape[i])
+			}
+		}
+		concatDimSize += t.Shape[axis]
+	}
+	newShape[axis] = concatDimSize
+
+	// 2. Инициализация результирующего тензора (используем твои Zeros)
+	res := Zeros(newShape...)
+
+	// 3. Копирование данных
+	offset := 0
+	for _, t := range tensors {
+		// Копируем данные из t в res со смещением по оси axis
+		// Используем обход по всем элементам входного тензора
+		for i := 0; i < len(t.Data); i++ {
+			// Перевод плоского индекса в многомерные координаты
+			coords := make([]int, len(t.Shape))
+			tempIdx := i
+			for d := len(t.Shape) - 1; d >= 0; d-- {
+				coords[d] = tempIdx % t.Shape[d]
+				tempIdx /= t.Shape[d]
+			}
+
+			// Сдвигаем координату по целевой оси
+			coords[axis] += offset
+
+			// Перевод координат обратно в плоский индекс для res
+			resIdx := 0
+			for d := range coords {
+				resIdx += coords[d] * res.Strides[d]
+			}
+			res.Data[resIdx] = t.Data[i]
+		}
+		offset += t.Shape[axis]
+	}
+
+	return res, nil
+}
+
+// Slice извлекает часть тензора. Нужен для обратного прохода Concatenate.
+func Slice(t *Tensor, axis int, start int, length int) (*Tensor, error) {
+	newShape := append([]int{}, t.Shape...)
+	newShape[axis] = length
+
+	res := Zeros(newShape...)
+
+	for i := 0; i < len(res.Data); i++ {
+		coords := make([]int, len(newShape))
+		tempIdx := i
+		for d := len(newShape) - 1; d >= 0; d-- {
+			coords[d] = tempIdx % newShape[d]
+			tempIdx /= newShape[d]
+		}
+
+		// Сдвигаемся в исходном тензоре
+		coords[axis] += start
+
+		oldIdx := 0
+		for d := range coords {
+			oldIdx += coords[d] * t.Strides[d]
+		}
+		res.Data[i] = t.Data[oldIdx]
+	}
+
+	return res, nil
 }

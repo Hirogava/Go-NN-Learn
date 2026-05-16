@@ -22,7 +22,8 @@ type checkpointMeta struct {
 
 // SaveCheckpoint сохраняет все параметры из модуля m в файл path.
 // Формат файла:
-//   [uint32 metaLen][metaJSON][binary float64...]
+//
+//	[uint32 metaLen][metaJSON][binary float64...]
 //
 // metaJSON — JSON с версией формата: { "version": 1, "params": [{"shape":[r,c]}, ...] }
 // Параметры записываются в том же порядке, что возвращает m.Params().
@@ -145,4 +146,33 @@ func LoadCheckpoint(m layers.Module, path string) error {
 		copy(target.Data, buf)
 	}
 	return nil
+}
+
+func SaveCheckpointToBytes(m layers.Module) ([]byte, error) {
+	tmp := ".tmp_checkpoint_bytes"
+
+	err := SaveCheckpoint(m, tmp)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmp)
+
+	data, err := os.ReadFile(tmp)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func LoadCheckpointFromBytes(m layers.Module, data []byte) error {
+	tmp := ".tmp_checkpoint_bytes_load"
+
+	err := os.WriteFile(tmp, data, 0644)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp)
+
+	return LoadCheckpoint(m, tmp)
 }
