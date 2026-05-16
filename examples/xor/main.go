@@ -45,21 +45,9 @@ func main() {
 	})
 
 	// Модель: Dense(2,8) -> ReLU -> Dense(8,1) -> Sigmoid
-	// He-инициализация для ReLU: std = sqrt(2/in)
-	he1 := func(w []float64) {
-		std := 1.0 // sqrt(2/2) для Dense(2,8)
-		for i := range w {
-			w[i] = rand.NormFloat64() * std
-		}
-	}
-	he2 := func(w []float64) {
-		std := 0.5 // sqrt(2/8) для Dense(8,1)
-		for i := range w {
-			w[i] = rand.NormFloat64() * std
-		}
-	}
-	dense1 := layers.NewDense(2, 8, he1)
-	dense2 := layers.NewDense(8, 1, he2)
+	// He-инициализация для ReLU, Xavier для Sigmoid
+	dense1 := layers.NewDense(2, 8, layers.HeInit(2), layers.ZeroInit())
+	dense2 := layers.NewDense(8, 1, layers.XavierInit(8, 1), layers.ZeroInit())
 
 	optimizer := optimizers.NewAdam(0.1, 0.9, 0.999, 1e-8)
 

@@ -23,11 +23,11 @@ type Conv2D struct {
 
 func NewConv2D(
 	inChannels, outChannels, kernelSize, stride, padding int,
-	initFunc func([]float64),
+	wInit, bInit Initializer,
 ) *Conv2D {
 	weightsSize := outChannels * inChannels * kernelSize * kernelSize
 	weightsData := make([]float64, weightsSize)
-	initFunc(weightsData)
+	wInit(weightsData)
 
 	weights := &graph.Node{
 		Value: &tensor.Tensor{
@@ -38,7 +38,7 @@ func NewConv2D(
 	}
 
 	biasData := make([]float64, outChannels)
-	initFunc(biasData)
+	bInit(biasData)
 
 	bias := &graph.Node{
 		Value: &tensor.Tensor{
@@ -200,24 +200,28 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 	if err != nil {
 		panic("Conv2D backward dW: " + err.Error())
 	}
-	op.conv2d.weights.Grad = &tensor.Tensor{
-		Data:    wGradMat.Data,
-		Shape:   []int{c.outChannels, c.inChannels, c.kernelSize, c.kernelSize},
-		Strides: []int{c.inChannels * c.kernelSize * c.kernelSize, c.kernelSize * c.kernelSize, c.kernelSize, 1},
+
+	if op.conv2d.weights.Grad == nil {
+		op.conv2d.weights.Grad = &tensor.Tensor{
+			Data:    wGradMat.Data,
+			Shape:   []int{c.outChannels, c.inChannels, c.kernelSize, c.kernelSize},
+			Strides: []int{c.inChannels * c.kernelSize * c.kernelSize, c.kernelSize * c.kernelSize, c.kernelSize, 1},
+		}
+	} else {
+		for i := range op.conv2d.weights.Grad.Data {
+			op.conv2d.weights.Grad.Data[i] += wGradMat.Data[i]
+		}
 	}
 
-	bGrad := make([]float64, c.outChannels)
+	if op.conv2d.bias.Grad == nil {
+		op.conv2d.bias.Grad = tensor.Zeros(c.outChannels)
+	}
 	for oc := 0; oc < c.outChannels; oc++ {
 		sum := 0.0
 		for i := 0; i < op.colCols; i++ {
 			sum += grad.Data[oc*op.colCols+i]
 		}
-		bGrad[oc] = sum
-	}
-	op.conv2d.bias.Grad = &tensor.Tensor{
-		Data:    bGrad,
-		Shape:   []int{c.outChannels},
-		Strides: []int{1},
+		op.conv2d.bias.Grad.Data[oc] += sum
 	}
 
 	w := c.weights.Value
@@ -235,7 +239,14 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 	padW := W + 2*c.padding
 	dxPadded := col2im(dcolMat.Data, N, C, padH, padW, c.kernelSize, c.kernelSize, c.stride, outH, outW)
 
-	op.x.Grad = unpad4D(dxPadded, N, C, padH, padW, c.padding)
+	xGrad := unpad4D(dxPadded, N, C, padH, padW, c.padding)
+	if op.x.Grad == nil {
+		op.x.Grad = xGrad
+	} else {
+		for i := range op.x.Grad.Data {
+			op.x.Grad.Data[i] += xGrad.Data[i]
+		}
+	}
 }
 
 func pad4D(data []float64, N, C, H, W, pad int) []float64 {

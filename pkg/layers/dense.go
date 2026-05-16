@@ -13,9 +13,9 @@ type Dense struct {
 	outDim  int
 }
 
-func NewDense(inDim, outDim int, initFunc func([]float64)) *Dense {
+func NewDense(inDim, outDim int, wInit, bInit Initializer) *Dense {
 	wData := make([]float64, inDim*outDim)
-	initFunc(wData)
+	wInit(wData)
 	weights := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    wData,
@@ -25,7 +25,7 @@ func NewDense(inDim, outDim int, initFunc func([]float64)) *Dense {
 	}
 
 	bData := make([]float64, outDim)
-	initFunc(bData)
+	bInit(bData)
 	bias := &graph.Node{
 		Value: &tensor.Tensor{
 			Data:    bData,
@@ -143,6 +143,7 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 		Cols: wTensor.Shape[1],
 	}
 
+	// 1. Градиент по входу x: dL/dx = grad * w^T
 	wMatT, err := matrix.Transposition(wMat)
 	if err != nil {
 		panic("Transposition failed: " + err.Error())
@@ -151,12 +152,20 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 	if err != nil {
 		panic("Matrix multiplication failed: " + err.Error())
 	}
-	op.x.Grad = &tensor.Tensor{
-		Data:    xGradMat.Data,
-		Shape:   []int{xGradMat.Rows, xGradMat.Cols},
-		Strides: []int{xGradMat.Cols, 1},
+
+	if op.x.Grad == nil {
+		op.x.Grad = &tensor.Tensor{
+			Data:    xGradMat.Data,
+			Shape:   []int{xGradMat.Rows, xGradMat.Cols},
+			Strides: []int{xGradMat.Cols, 1},
+		}
+	} else {
+		for i := range op.x.Grad.Data {
+			op.x.Grad.Data[i] += xGradMat.Data[i]
+		}
 	}
 
+	// 2. Градиент по весам w: dL/dw = x^T * grad
 	xMatT, err := matrix.Transposition(xMat)
 	if err != nil {
 		panic("Transposition failed: " + err.Error())
@@ -165,23 +174,28 @@ func (op *denseOp) Backward(grad *tensor.Tensor) {
 	if err != nil {
 		panic("Matrix multiplication failed: " + err.Error())
 	}
-	op.w.Grad = &tensor.Tensor{
-		Data:    wGradMat.Data,
-		Shape:   []int{wGradMat.Rows, wGradMat.Cols},
-		Strides: []int{wGradMat.Cols, 1},
+
+	if op.w.Grad == nil {
+		op.w.Grad = &tensor.Tensor{
+			Data:    wGradMat.Data,
+			Shape:   []int{wGradMat.Rows, wGradMat.Cols},
+			Strides: []int{wGradMat.Cols, 1},
+		}
+	} else {
+		for i := range op.w.Grad.Data {
+			op.w.Grad.Data[i] += wGradMat.Data[i]
+		}
 	}
 
-	bGrad := make([]float64, gradMat.Cols)
+	// 3. Градиент по смещению b: dL/db = sum(grad, axis=0)
+	if op.b.Grad == nil {
+		op.b.Grad = tensor.Zeros(gradMat.Cols)
+	}
 	for j := 0; j < gradMat.Cols; j++ {
 		sum := 0.0
 		for i := 0; i < gradMat.Rows; i++ {
 			sum += gradMat.Data[i*gradMat.Cols+j]
 		}
-		bGrad[j] = sum
-	}
-	op.b.Grad = &tensor.Tensor{
-		Data:    bGrad,
-		Shape:   []int{len(bGrad)},
-		Strides: []int{1},
+		op.b.Grad.Data[j] += sum
 	}
 }

@@ -52,12 +52,8 @@ func main() {
 		Seed:      42,
 	})
 
-	// Модель - один Dense
-	model := layers.NewDense(inputDim, numClasses, func(w []float64) {
-		for i := range w {
-			w[i] = rand.NormFloat64() * 0.01
-		}
-	})
+	// Модель - один Dense (XavierInit для Softmax/Classification)
+	model := layers.NewDense(inputDim, numClasses, layers.XavierInit(inputDim, numClasses), layers.ZeroInit())
 
 	optimizer := optimizers.NewAdam(0.01, 0.9, 0.999, 1e-8)
 
