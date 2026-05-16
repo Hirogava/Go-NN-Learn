@@ -101,16 +101,14 @@ func (e *Engine) ReLU(input *graph.Node) *graph.Node {
 }
 
 func (op *ReLUOp) Backward(grad *tensor.Tensor) {
-	gradInput := tensor.Zeros(op.input.Value.Shape...)
-	for i := range op.input.Value.Data {
-		if op.input.Value.Data[i] > 0 {
-			gradInput.Data[i] = grad.Data[i]
-		}
-	}
 	if op.input.Grad == nil {
 		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
 	}
-	op.input.Grad = gradInput
+	for i := range op.input.Value.Data {
+		if op.input.Value.Data[i] > 0 {
+			op.input.Grad.Data[i] += grad.Data[i]
+		}
+	}
 }
 
 type SigmoidOp struct {
@@ -146,9 +144,10 @@ func (op *SigmoidOp) Backward(grad *tensor.Tensor) {
 		gradInput.Data[i] = grad.Data[i] * s * (1.0 - s)
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 type TanhOp struct {
@@ -184,9 +183,10 @@ func (op *TanhOp) Backward(grad *tensor.Tensor) {
 		gradInput.Data[i] = grad.Data[i] * (1.0 - t*t)
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 type SoftPlusOp struct {
@@ -242,9 +242,10 @@ func (op *SoftPlusOp) Backward(grad *tensor.Tensor) {
 		gradInput.Data[i] = grad.Data[i] * op.sigmoid.Data[i]
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 // geluNormalCDF — Φ(x), CDF стандартного нормального распределения.
@@ -294,9 +295,10 @@ func (op *GELUOp) Backward(grad *tensor.Tensor) {
 		gradInput.Data[i] = grad.Data[i] * (cdf + x*pdf)
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 // LeakyReLUOp: y_i = max(slope * x_i, x_i). Обычно 0 < slope < 1 (например 0.01).
@@ -340,9 +342,10 @@ func (op *LeakyReLUOp) Backward(grad *tensor.Tensor) {
 		}
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 type ELUOp struct {
@@ -388,9 +391,10 @@ func (op *ELUOp) Backward(grad *tensor.Tensor) {
 		}
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 type SoftmaxOp struct {
@@ -490,9 +494,10 @@ func (op *SoftmaxOp) Backward(grad *tensor.Tensor) {
 	}
 
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
 
 type SoftmaxCrossEntropyOp struct {
@@ -562,8 +567,8 @@ func (op *SoftmaxCrossEntropyOp) Backward(grad *tensor.Tensor) {
 		}
 	}
 	if op.input.Grad == nil {
-		op.input.Grad = tensor.Zeros(op.input.Value.Shape...)
+		op.input.Grad = gradInput
+	} else {
+		tensor.AddInPlace(op.input.Grad, gradInput)
 	}
-	op.input.Grad = gradInput
 }
-

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
 	"os"
 	"sort"
 	"strings"
@@ -511,16 +510,9 @@ type textClassifierModel struct {
 }
 
 func newTextClassifierModel(inputDim, hiddenDim, numClasses int, seed int64) *textClassifierModel {
-	rng := rand.New(rand.NewSource(seed))
-	initWeights := func(data []float64) {
-		for i := range data {
-			data[i] = rng.NormFloat64() * 0.01
-		}
-	}
-
 	return &textClassifierModel{
-		hidden: layers.NewDense(inputDim, hiddenDim, initWeights),
-		output: layers.NewDense(hiddenDim, numClasses, initWeights),
+		hidden: layers.NewDense(inputDim, hiddenDim, layers.HeInit(inputDim), layers.ZeroInit()),
+		output: layers.NewDense(hiddenDim, numClasses, layers.XavierInit(hiddenDim, numClasses), layers.ZeroInit()),
 	}
 }
 

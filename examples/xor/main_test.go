@@ -35,18 +35,9 @@ func runXORTraining(seed int64) (float64, int, bool) {
 		Seed:      seed,
 	})
 
-	he1 := func(w []float64) {
-		for i := range w {
-			w[i] = rand.NormFloat64()
-		}
-	}
-	he2 := func(w []float64) {
-		for i := range w {
-			w[i] = rand.NormFloat64() * 0.5
-		}
-	}
-	dense1 := layers.NewDense(2, 8, he1)
-	dense2 := layers.NewDense(8, 1, he2)
+	// He-инициализация для ReLU, Xavier для Sigmoid
+	dense1 := layers.NewDense(2, 8, layers.HeInit(2), layers.ZeroInit())
+	dense2 := layers.NewDense(8, 1, layers.XavierInit(8, 1), layers.ZeroInit())
 	optimizer := optimizers.NewAdam(0.1, 0.9, 0.999, 1e-8)
 
 	const maxSteps = 5000

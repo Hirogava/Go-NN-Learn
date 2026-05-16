@@ -16,7 +16,7 @@ func initFuncOnes(data []float64) {
 }
 
 func TestConv2DForward_Simple(t *testing.T) {
-	conv := NewConv2D(1, 2, 2, 1, 0, initFuncOnes)
+	conv := NewConv2D(1, 2, 2, 1, 0, initFuncOnes, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -49,7 +49,7 @@ func TestConv2DForward_Simple(t *testing.T) {
 }
 
 func TestConv2DForward_WithPadding(t *testing.T) {
-	conv := NewConv2D(1, 1, 3, 1, 1, initFuncOnes)
+	conv := NewConv2D(1, 1, 3, 1, 1, initFuncOnes, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -72,7 +72,7 @@ func TestConv2DForward_WithPadding(t *testing.T) {
 }
 
 func TestConv2DForward_Stride2(t *testing.T) {
-	conv := NewConv2D(1, 1, 2, 2, 0, initFuncOnes)
+	conv := NewConv2D(1, 1, 2, 2, 0, initFuncOnes, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -96,7 +96,7 @@ func TestConv2DBackward(t *testing.T) {
 	autograd.SetGraph(autograd.NewGraph())
 	defer autograd.ClearGraph()
 
-	conv := NewConv2D(2, 3, 2, 1, 0, initFuncFixed)
+	conv := NewConv2D(2, 3, 2, 1, 0, initFuncFixed, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -133,7 +133,7 @@ func TestConv2DNumericalGradient(t *testing.T) {
 	autograd.SetGraph(autograd.NewGraph())
 	defer autograd.ClearGraph()
 
-	conv := NewConv2D(1, 2, 2, 1, 0, initFuncFixed)
+	conv := NewConv2D(1, 2, 2, 1, 0, initFuncFixed, ZeroInit())
 	inputData := tensor.Randn([]int{1, 1, 4, 4}, 42)
 	ctx := autograd.GetGraph()
 	inputNode := ctx.RequireGrad(inputData)

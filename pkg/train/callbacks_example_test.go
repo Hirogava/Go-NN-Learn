@@ -45,7 +45,7 @@ func (m *SimpleModel) Eval() {
 func Example_basicTrainingLoop() {
 	// Создаем модель
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	// Создаем контекст обучения
@@ -97,7 +97,7 @@ func Example_basicTrainingLoop() {
 // Example_modelCheckpoint демонстрирует сохранение чекпоинтов
 func Example_modelCheckpoint() {
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	// Создаем колбэк для сохранения лучшей модели
@@ -127,7 +127,7 @@ func Example_modelCheckpoint() {
 // Example_metricsLogger демонстрирует логирование метрик
 func Example_metricsLogger() {
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	// Создаем логгер в формате CSV
@@ -160,7 +160,7 @@ func Example_metricsLogger() {
 // Example_earlyStopping демонстрирует досрочную остановку обучения
 func Example_earlyStopping() {
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	// Остановка если val_loss не улучшается 3 эпохи подряд
@@ -194,7 +194,7 @@ func Example_earlyStopping() {
 // Example_multipleCallbacks демонстрирует использование нескольких колбэков
 func Example_multipleCallbacks() {
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	// Комбинируем несколько колбэков
@@ -252,7 +252,7 @@ func Example_customCallback() {
 	printCallback.BaseCallback = train.BaseCallback{}
 
 	model := &SimpleModel{
-		layer: layers.NewDense(10, 5, simpleInit),
+		layer: layers.NewDense(10, 5, simpleInit, layers.ZeroInit()),
 	}
 
 	ctx := train.NewTrainingContext(model, 20)

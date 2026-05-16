@@ -15,7 +15,7 @@ func initFuncFixed(data []float64) {
 }
 
 func TestDenseForwardVector(t *testing.T) {
-	dense := NewDense(3, 2, initFuncFixed)
+	dense := NewDense(3, 2, initFuncFixed, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -31,7 +31,7 @@ func TestDenseForwardVector(t *testing.T) {
 }
 
 func TestDenseForwardMatrix(t *testing.T) {
-	dense := NewDense(3, 2, initFuncFixed)
+	dense := NewDense(3, 2, initFuncFixed, ZeroInit())
 
 	input := &graph.Node{
 		Value: &tensor.Tensor{
@@ -47,7 +47,7 @@ func TestDenseForwardMatrix(t *testing.T) {
 }
 
 func TestDenseBackward(t *testing.T) {
-	dense := NewDense(3, 2, initFuncFixed)
+	dense := NewDense(3, 2, initFuncFixed, ZeroInit())
 
 	// ПРАВИЛЬНО: используем NewNode
 	xVal := &tensor.Tensor{
