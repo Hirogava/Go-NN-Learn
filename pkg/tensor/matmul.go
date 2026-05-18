@@ -156,7 +156,9 @@ func matmulBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
 		c[i] = 0.0
 	}
 
-	packedB := make([]float64, blockSize*blockSize)
+	var packedBBuf [4096]float64
+	packedB := packedBBuf[:blockSize*blockSize]
+
 	for jj := 0; jj < p; jj += blockSize {
 		jSize := min(blockSize, p-jj)
 		for kk := 0; kk < n; kk += blockSize {
@@ -341,14 +343,6 @@ func MatMulTransposeA(a, b *Tensor) (*Tensor, error) {
 	return result, nil
 }
 
-// min возвращает минимум из двух чисел
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func packBTileTransposed(b, packed []float64, kk, jj, kSize, jSize, p int) {
 	for j := 0; j < jSize; j++ {
 		dst := j * kSize
@@ -447,15 +441,16 @@ func matmulParallelBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
 	var wg sync.WaitGroup
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		go func() {
+		// Передаем переменные как аргументы, чтобы избежать аллокации замыкания (closure escape)
+		go func(sched *matmulRowScheduler, a, b, c []float64, m, n, p, blockSize int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			packedB := make([]float64, blockSize*blockSize)
+			var packedBBuf [4096]float64
+			packedB := packedBBuf[:blockSize*blockSize]
 			for {
-				start, end, ok := scheduler.next()
+				start, end, ok := sched.next()
 				if !ok {
 					return
 				}
-
 				for jj := 0; jj < p; jj += blockSize {
 					jSize := min(blockSize, p-jj)
 					for kk := 0; kk < n; kk += blockSize {
@@ -468,7 +463,7 @@ func matmulParallelBlockedV2(a, b, c []float64, m, n, p int, blockSize int) {
 					}
 				}
 			}
-		}()
+		}(scheduler, a, b, c, m, n, p, blockSize, &wg)
 	}
 
 	wg.Wait()

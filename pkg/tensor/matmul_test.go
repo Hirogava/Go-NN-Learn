@@ -242,7 +242,10 @@ func BenchmarkMatMulSmall(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		MatMul(a, c)
+		_, err := MatMul(a, c)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -265,7 +268,10 @@ func BenchmarkMatMulMedium(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		MatMul(a, c)
+		_, err := MatMul(a, c)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -288,7 +294,10 @@ func BenchmarkMatMulLarge(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		MatMul(a, c)
+		_, err := MatMul(a, c)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
