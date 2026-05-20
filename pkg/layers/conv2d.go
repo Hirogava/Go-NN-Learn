@@ -2,6 +2,7 @@ package layers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Hirogava/Go-NN-Learn/pkg/autograd"
 	"github.com/Hirogava/Go-NN-Learn/pkg/tensor"
@@ -14,6 +15,8 @@ type Conv2D struct {
 	kernelSize  int
 	stride      int
 	padding     int
+	paddingMode string
+	dilation    int
 
 	weights *graph.Node
 	bias    *graph.Node
@@ -21,10 +24,54 @@ type Conv2D struct {
 	inputShape []int
 }
 
+type Conv2DConfig struct {
+	InChannels  int
+	OutChannels int
+	KernelSize  int
+	Stride      int
+	Padding     string
+	Dilation    int
+	WInit       Initializer
+	BInit       Initializer
+}
+
 func NewConv2D(
 	inChannels, outChannels, kernelSize, stride, padding int,
 	wInit, bInit Initializer,
 ) *Conv2D {
+	c := newConv2D(inChannels, outChannels, kernelSize, stride, wInit, bInit)
+	c.padding = padding
+	c.paddingMode = "explicit"
+	return c
+}
+
+func NewConv2DWithConfig(cfg Conv2DConfig) *Conv2D {
+	c := newConv2D(cfg.InChannels, cfg.OutChannels, cfg.KernelSize, cfg.Stride, cfg.WInit, cfg.BInit)
+	c.paddingMode = normalizeConvPadding(cfg.Padding)
+	c.dilation = cfg.Dilation
+	if c.dilation == 0 {
+		c.dilation = 1
+	}
+	return c
+}
+
+func newConv2D(
+	inChannels, outChannels, kernelSize, stride int,
+	wInit, bInit Initializer,
+) *Conv2D {
+	if stride <= 0 {
+		panic("Conv2D: stride must be > 0")
+	}
+	if kernelSize <= 0 {
+		panic("Conv2D: kernel size must be > 0")
+	}
+	if wInit == nil {
+		wInit = ZeroInit()
+	}
+	if bInit == nil {
+		bInit = ZeroInit()
+	}
+
 	weightsSize := outChannels * inChannels * kernelSize * kernelSize
 	weightsData := make([]float64, weightsSize)
 	wInit(weightsData)
@@ -53,7 +100,8 @@ func NewConv2D(
 		outChannels: outChannels,
 		kernelSize:  kernelSize,
 		stride:      stride,
-		padding:     padding,
+		paddingMode: "explicit",
+		dilation:    1,
 		weights:     weights,
 		bias:        bias,
 	}
@@ -79,13 +127,22 @@ func (c *Conv2D) Forward(x *graph.Node) *graph.Node {
 
 	c.inputShape = append([]int{}, x.Value.Shape...)
 
-	outHeight := (inputHeight+2*c.padding-c.kernelSize)/c.stride + 1
-	outWidth := (inputWidth+2*c.padding-c.kernelSize)/c.stride + 1
-	padded := pad4D(x.Value.Data, batchSize, inputChannels, inputHeight, inputWidth, c.padding)
-	padH := inputHeight + 2*c.padding
-	padW := inputWidth + 2*c.padding
+	dilation := c.dilation
+	if dilation <= 0 {
+		dilation = 1
+	}
+	effKernel := (c.kernelSize-1)*dilation + 1
+	outHeight, padTop, padBottom := convOutputAndPadding(inputHeight, c.kernelSize, c.stride, dilation, c.padding, c.paddingMode)
+	outWidth, padLeft, padRight := convOutputAndPadding(inputWidth, c.kernelSize, c.stride, dilation, c.padding, c.paddingMode)
+	if outHeight <= 0 || outWidth <= 0 {
+		panic(fmt.Sprintf("Conv2D: invalid output shape [%d,%d] for input [%d,%d], effective kernel %d, stride %d", outHeight, outWidth, inputHeight, inputWidth, effKernel, c.stride))
+	}
 
-	col := im2col(padded, batchSize, inputChannels, padH, padW, c.kernelSize, c.kernelSize, c.stride, outHeight, outWidth)
+	padded := pad4D(x.Value.Data, batchSize, inputChannels, inputHeight, inputWidth, padTop, padBottom, padLeft, padRight)
+	padH := inputHeight + padTop + padBottom
+	padW := inputWidth + padLeft + padRight
+
+	col := im2col(padded, batchSize, inputChannels, padH, padW, c.kernelSize, c.kernelSize, c.stride, dilation, outHeight, outWidth)
 	colRows := inputChannels * c.kernelSize * c.kernelSize
 	colCols := batchSize * outHeight * outWidth
 
@@ -107,37 +164,41 @@ func (c *Conv2D) Forward(x *graph.Node) *graph.Node {
 		panic("Conv2D forward MatMul: " + err.Error())
 	}
 
-	outputData := outMat.Data
-
 	biasData := c.bias.Value.Data
 	for oc := 0; oc < c.outChannels; oc++ {
 		for i := 0; i < colCols; i++ {
-			outputData[oc*colCols+i] += biasData[oc]
+			outMat.Data[oc*colCols+i] += biasData[oc]
 		}
 	}
 
 	outputShape := []int{batchSize, c.outChannels, outHeight, outWidth}
 	outputStrides := convStrides(outputShape)
+	outputData := matToNCHW(outMat.Data, batchSize, c.outChannels, outHeight, outWidth)
 
-	output := &graph.Node{
-		Value: &tensor.Tensor{
-			Data:    outputData,
-			Shape:   outputShape,
-			Strides: outputStrides,
-		},
+	outputTensor := &tensor.Tensor{
+		Data:    outputData,
+		Shape:   outputShape,
+		Strides: outputStrides,
 	}
 
 	if autograd.GradEnabled() {
-		output.Operation = &conv2dOp{
+		op := &conv2dOp{
 			x:       x,
 			conv2d:  c,
 			col:     col,
 			colRows: colRows,
 			colCols: colCols,
+			outH:    outHeight,
+			outW:    outWidth,
+			padTop:  padTop,
+			padLeft: padLeft,
+			padH:    padH,
+			padW:    padW,
 		}
+		return graph.NewNode(outputTensor, []*graph.Node{x, c.weights, c.bias}, op)
 	}
 
-	return output
+	return &graph.Node{Value: outputTensor}
 }
 
 func (c *Conv2D) Params() []*graph.Node {
@@ -173,6 +234,12 @@ type conv2dOp struct {
 	col     []float64
 	colRows int
 	colCols int
+	outH    int
+	outW    int
+	padTop  int
+	padLeft int
+	padH    int
+	padW    int
 }
 
 func (op *conv2dOp) Backward(grad *tensor.Tensor) {
@@ -181,11 +248,16 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 	C := c.inputShape[1]
 	H := c.inputShape[2]
 	W := c.inputShape[3]
-	outH := (H+2*c.padding-c.kernelSize)/c.stride + 1
-	outW := (W+2*c.padding-c.kernelSize)/c.stride + 1
+	dilation := c.dilation
+	if dilation <= 0 {
+		dilation = 1
+	}
+	outH := op.outH
+	outW := op.outW
+	gradMatData := nchwToMat(grad.Data, N, c.outChannels, outH, outW)
 
 	gradReshaped := &tensor.Tensor{
-		Data:    grad.Data,
+		Data:    gradMatData,
 		Shape:   []int{c.outChannels, op.colCols},
 		Strides: []int{op.colCols, 1},
 	}
@@ -219,7 +291,7 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 	for oc := 0; oc < c.outChannels; oc++ {
 		sum := 0.0
 		for i := 0; i < op.colCols; i++ {
-			sum += grad.Data[oc*op.colCols+i]
+			sum += gradMatData[oc*op.colCols+i]
 		}
 		op.conv2d.bias.Grad.Data[oc] += sum
 	}
@@ -235,11 +307,9 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 		panic("Conv2D backward dcol: " + err.Error())
 	}
 
-	padH := H + 2*c.padding
-	padW := W + 2*c.padding
-	dxPadded := col2im(dcolMat.Data, N, C, padH, padW, c.kernelSize, c.kernelSize, c.stride, outH, outW)
+	dxPadded := col2im(dcolMat.Data, N, C, op.padH, op.padW, c.kernelSize, c.kernelSize, c.stride, dilation, outH, outW)
 
-	xGrad := unpad4D(dxPadded, N, C, padH, padW, c.padding)
+	xGrad := unpad4D(dxPadded, N, C, H, W, op.padH, op.padW, op.padTop, op.padLeft)
 	if op.x.Grad == nil {
 		op.x.Grad = xGrad
 	} else {
@@ -249,20 +319,53 @@ func (op *conv2dOp) Backward(grad *tensor.Tensor) {
 	}
 }
 
-func pad4D(data []float64, N, C, H, W, pad int) []float64 {
-	if pad <= 0 {
+func normalizeConvPadding(padding string) string {
+	padding = strings.ToLower(strings.TrimSpace(padding))
+	switch padding {
+	case "", "valid":
+		return "valid"
+	case "same":
+		return "same"
+	default:
+		panic(fmt.Sprintf("Conv2D: unsupported padding mode %q", padding))
+	}
+}
+
+func convOutputAndPadding(input, kernel, stride, dilation, explicitPad int, mode string) (out, before, after int) {
+	effKernel := (kernel-1)*dilation + 1
+	switch mode {
+	case "same":
+		out = (input + stride - 1) / stride
+		needed := (out-1)*stride + effKernel - input
+		if needed < 0 {
+			needed = 0
+		}
+		before = needed / 2
+		after = needed - before
+	case "valid":
+		out = (input-effKernel)/stride + 1
+	default:
+		before = explicitPad
+		after = explicitPad
+		out = (input+before+after-effKernel)/stride + 1
+	}
+	return out, before, after
+}
+
+func pad4D(data []float64, N, C, H, W, padTop, padBottom, padLeft, padRight int) []float64 {
+	if padTop == 0 && padBottom == 0 && padLeft == 0 && padRight == 0 {
 		return data
 	}
-	padH := H + 2*pad
-	padW := W + 2*pad
+	padH := H + padTop + padBottom
+	padW := W + padLeft + padRight
 	out := make([]float64, N*C*padH*padW)
 	for n := 0; n < N; n++ {
 		for c := 0; c < C; c++ {
 			for h := 0; h < H; h++ {
 				for w := 0; w < W; w++ {
 					srcIdx := n*C*H*W + c*H*W + h*W + w
-					dstH := h + pad
-					dstW := w + pad
+					dstH := h + padTop
+					dstW := w + padLeft
 					dstIdx := n*C*padH*padW + c*padH*padW + dstH*padW + dstW
 					out[dstIdx] = data[srcIdx]
 				}
@@ -272,65 +375,68 @@ func pad4D(data []float64, N, C, H, W, pad int) []float64 {
 	return out
 }
 
-func im2col(padded []float64, N, C, padH, padW, kH, kW, stride, outH, outW int) []float64 {
+func im2col(padded []float64, N, C, padH, padW, kH, kW, stride, dilation, outH, outW int) []float64 {
 	colRows := C * kH * kW
 	colCols := N * outH * outW
 	col := make([]float64, colRows*colCols)
 
-	colIdx := 0
+	colCol := 0
 	for n := 0; n < N; n++ {
 		for oh := 0; oh < outH; oh++ {
 			for ow := 0; ow < outW; ow++ {
+				row := 0
 				for c := 0; c < C; c++ {
 					for kh := 0; kh < kH; kh++ {
 						for kw := 0; kw < kW; kw++ {
-							h := oh*stride + kh
-							w := ow*stride + kw
+							h := oh*stride + kh*dilation
+							w := ow*stride + kw*dilation
 							srcIdx := n*C*padH*padW + c*padH*padW + h*padW + w
-							col[colIdx] = padded[srcIdx]
-							colIdx++
+							col[row*colCols+colCol] = padded[srcIdx]
+							row++
 						}
 					}
 				}
+				colCol++
 			}
 		}
 	}
 	return col
 }
 
-func col2im(col []float64, N, C, padH, padW, kH, kW, stride, outH, outW int) []float64 {
+func col2im(col []float64, N, C, padH, padW, kH, kW, stride, dilation, outH, outW int) []float64 {
+	colCols := N * outH * outW
 	out := make([]float64, N*C*padH*padW)
 
-	colIdx := 0
+	colCol := 0
 	for n := 0; n < N; n++ {
 		for oh := 0; oh < outH; oh++ {
 			for ow := 0; ow < outW; ow++ {
+				row := 0
 				for c := 0; c < C; c++ {
 					for kh := 0; kh < kH; kh++ {
 						for kw := 0; kw < kW; kw++ {
-							h := oh*stride + kh
-							w := ow*stride + kw
+							h := oh*stride + kh*dilation
+							w := ow*stride + kw*dilation
 							dstIdx := n*C*padH*padW + c*padH*padW + h*padW + w
-							out[dstIdx] += col[colIdx]
-							colIdx++
+							out[dstIdx] += col[row*colCols+colCol]
+							row++
 						}
 					}
 				}
+				colCol++
 			}
 		}
 	}
 	return out
 }
 
-func unpad4D(padded []float64, N, C, padH, padW, pad int) *tensor.Tensor {
-	H := padH - 2*pad
-	W := padW - 2*pad
+func unpad4D(padded []float64, N, C, H, W, padH, padW, padTop, padLeft int) *tensor.Tensor {
 	out := tensor.Zeros(N, C, H, W)
 	for n := 0; n < N; n++ {
 		for c := 0; c < C; c++ {
 			for h := 0; h < H; h++ {
 				for w := 0; w < W; w++ {
-					srcIdx := n*C*padH*padW + c*padH*padW + (h+pad)*padW + (w + pad)
+					srcIdx := n*C*padH*padW + c*padH*padW + (h+padTop)*padW + (w + padLeft)
 					dstIdx := n*C*H*W + c*H*W + h*W + w
 					out.Data[dstIdx] = padded[srcIdx]
 				}
@@ -338,6 +444,38 @@ func unpad4D(padded []float64, N, C, padH, padW, pad int) *tensor.Tensor {
 		}
 	}
 	return out
+}
+
+func matToNCHW(mat []float64, N, C, H, W int) []float64 {
+	colCols := N * H * W
+	out := make([]float64, N*C*H*W)
+	for n := 0; n < N; n++ {
+		for c := 0; c < C; c++ {
+			for h := 0; h < H; h++ {
+				for w := 0; w < W; w++ {
+					col := n*H*W + h*W + w
+					out[n*C*H*W+c*H*W+h*W+w] = mat[c*colCols+col]
+				}
+			}
+		}
+	}
+	return out
+}
+
+func nchwToMat(data []float64, N, C, H, W int) []float64 {
+	colCols := N * H * W
+	mat := make([]float64, C*colCols)
+	for n := 0; n < N; n++ {
+		for c := 0; c < C; c++ {
+			for h := 0; h < H; h++ {
+				for w := 0; w < W; w++ {
+					col := n*H*W + h*W + w
+					mat[c*colCols+col] = data[n*C*H*W+c*H*W+h*W+w]
+				}
+			}
+		}
+	}
+	return mat
 }
 
 func convStrides(shape []int) []int {
