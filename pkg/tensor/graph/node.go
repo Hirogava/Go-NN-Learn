@@ -80,9 +80,7 @@ func (n *Node) Prune() {
 		visited[cur] = struct{}{}
 
 		// Добавляем родителей в обход
-		for _, p := range cur.Parents {
-			stack = append(stack, p)
-		}
+		stack = append(stack, cur.Parents...)
 
 		if n.Value == nil {
 			cur.Parents = nil
